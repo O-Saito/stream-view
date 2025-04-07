@@ -218,16 +218,15 @@
     <script src="https://webgl2fundamentals.org/webgl/resources/m4.js"></script>
 
     <script type="module">
-        const path = '/stream-view/';
-        import engine from `${path}js/dsv/engine.js`;
-        import game from '/js/dsv/game.js';
-        import { atlases, charDefinitions, propsDefinition, createAllAtlas } from '/js/dsv/atlasManager.js';
-        import drawer from '/js/dsv/drawers.js';
-        import propConstruct from '/js/dsv/propConstruct.js';
-        import Character from '/js/dsv/elements/character.js';
-        import charAnimations from '/js/dsv/animations/charAnimation.js';
-        import editor from '/js/dsv/editor.js';
-        import raw from '/js/dsv/shader/raw.js';
+        import engine from '/stream-view/js/dsv/engine.js';
+        import game from '/stream-view/js/dsv/game.js';
+        import { atlases, charDefinitions, propsDefinition, createAllAtlas } from '/stream-view/js/dsv/atlasManager.js';
+        import drawer from '/stream-view/js/dsv/drawers.js';
+        import propConstruct from '/stream-view/js/dsv/propConstruct.js';
+        import Character from '/stream-view/js/dsv/elements/character.js';
+        import charAnimations from '/stream-view/js/dsv/animations/charAnimation.js';
+        import editor from '/stream-view/js/dsv/editor.js';
+        import raw from '/stream-view/js/dsv/shader/raw.js';
 
         const params = new URLSearchParams(window.location.search);
         document.getElementById('lbl-user-id').innerHTML = params.get('viewer');
