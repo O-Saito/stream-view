@@ -1,5 +1,5 @@
-import engine from '/js/dsv/engine.js';
-import game from '/js/dsv/game.js';
+import engine from './engine.js';
+import game from './game.js';
 import { atlases, charDefinitions, propsDefinition, createAllAtlas } from './atlasManager.js';
 import propConstruct from './propConstruct.js';
 import charAnimations from './animations/charAnimation.js';
