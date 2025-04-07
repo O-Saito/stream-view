@@ -218,7 +218,8 @@
     <script src="https://webgl2fundamentals.org/webgl/resources/m4.js"></script>
 
     <script type="module">
-        import engine from '/js/dsv/engine.js';
+        const path = '/stream-view/';
+        import engine from `${path}js/dsv/engine.js`;
         import game from '/js/dsv/game.js';
         import { atlases, charDefinitions, propsDefinition, createAllAtlas } from '/js/dsv/atlasManager.js';
         import drawer from '/js/dsv/drawers.js';
