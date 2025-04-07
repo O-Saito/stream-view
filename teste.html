@@ -1,1 +1,468 @@
-<h1>Teste</h1>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viewer</title>
+    <style>
+        @font-face {
+            font-family: 'customFont';
+            src: url('/Kingthings_Exeter.ttf');
+        }
+
+        body {
+            margin: 0;
+            /* overflow: hidden; */
+        }
+
+        html,
+        body,
+        canvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            transform: scale(1) translateZ(0);
+            will-change: transform;
+            backface-visibility: hidden;
+            perspective: 1px;
+        }
+
+        canvas {
+            display: block;
+            image-rendering: pixelated !important;
+            /* Modern browsers */
+            image-rendering: crisp-edges;
+            /* Firefox */
+            image-rendering: -webkit-optimize-contrast;
+            /* Safari */
+            image-rendering: -moz-crisp-edges;
+            /* Firefox */
+            image-rendering: -o-crisp-edges;
+            /* Opera */
+            transform: translateZ(0);
+            /* Força o CEF a usar escala exata */
+            will-change: transform;
+            /* Otimização para CEF */
+        }
+
+        .menu.top>div {
+            display: inline-block;
+        }
+
+        #debugCanvas {
+            position: relative;
+        }
+
+        #uiCanvas {
+            position: relative;
+        }
+
+        #debug>canvas {
+            display: inline-block;
+        }
+
+        #debug {
+            display: flex;
+            align-items: flex-start;
+        }
+
+        #charConfig {
+            display: inline-block;
+            top: 0;
+            right: 0;
+            position: absolute;
+            background-color: white;
+        }
+
+        #charConfig input {
+            width: 45px;
+        }
+
+        #charConfig>div>label {
+            width: 100%;
+            display: inline-block;
+        }
+
+        #charConfig ul {
+            border: 1px solid;
+            list-style: none;
+            padding-left: 10px;
+            padding-right: 10px;
+            margin-top: 0px;
+        }
+
+        #charConfig li label {
+            text-align: center;
+            width: 100%;
+            display: inline-block;
+        }
+
+        #charConfig li:has(+li) {
+            border-bottom: 1px solid;
+        }
+
+        #charConfig .animation-group span {
+            width: 45px;
+            display: inline-block;
+            text-align: right;
+        }
+
+        #charConfig .animation-group {
+            width: 135px;
+            border-bottom: 1px solid;
+        }
+
+        .lbl-range>span {
+            display: inline-block;
+            min-width: 25px;
+            width: 25px;
+            text-align: right;
+        }
+
+        #floating-menu {
+            position: absolute;
+            top: 0;
+            right: 0;
+            color: white;
+            background-color: black;
+        }
+
+        #floating-menu:not(:empty) {
+            padding: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <label>FPS: <span id="lbl-fps"></span></label>
+    <label>USER: <span id="lbl-user-id"></span></label>
+
+    <div class="menu top">
+        <div>
+            <button type="button" id="btn-salvar-cenario">Salvar Cenário</button>
+            <button type="button" id="btn-add-prop">Adicionar Prop</button>
+        </div>
+        <div>
+            <label>Pick</label>
+            <div>
+                <select id="ddlPickType">
+                    <option value="prop">Prop</option>
+                    <option value="char">Char</option>
+                </select>
+                <label id="lblPicking"></label>
+            </div>
+        </div>
+        <br />
+        <div>
+            <label>Luz Global</label>
+            <div>
+                <label class="lbl-range">X(<span class="lbl-range-x-value">&nbsp;</span>)</label>
+                <input type="range" class="rangeLight" data-dir="x" min="-1" max="1" step="0.1" />
+                <label class="lbl-range">Y(<span class="lbl-range-y-value">&nbsp;</span>)</label>
+                <input type="range" class="rangeLight" data-dir="y" min="-1" max="1" step="0.1" />
+                <label class="lbl-range">Z(<span class="lbl-range-z-value">&nbsp;</span>)</label>
+                <input type="range" class="rangeLight" data-dir="z" min="-1" max="1" step="0.1" />
+            </div>
+        </div>
+        <div>
+            <label>Luz Global</label>
+            <div>
+                <label class="lbl-range">A(<span class="lbl-range-0-value">&nbsp;</span>)</label>
+                <input type="range" class="range" data-dir="0" min="0" max="10" step="0.1" />
+                <label class="lbl-range">B(<span class="lbl-range-1-value">&nbsp;</span>)</label>
+                <input type="range" class="range" data-dir="1" min="0" max="10" step="0.1" />
+                <label class="lbl-range">C(<span class="lbl-range-2-value">&nbsp;</span>)</label>
+                <input type="range" class="range" data-dir="2" min="0" max="10" step="0.1" />
+                <label class="lbl-range">R(<span class="lbl-range-3-value">&nbsp;</span>)</label>
+                <input type="range" class="range" data-dir="3" min="0" max="10" step="0.1" />
+                <label class="lbl-range">C(<span class="lbl-range-2-value">&nbsp;</span>)</label>
+
+                <label class="lbl-range">X(<span class="lbl-range-0-0-value">&nbsp;</span>)</label>
+                <input type="range" class="range-pos" data-dir="0" min="0" max="1920" step="1" />
+                <label class="lbl-range">Y(<span class="lbl-range-0-1-value">&nbsp;</span>)</label>
+                <input type="range" class="range-pos" data-dir="1" min="0" max="200" step="1" />
+            </div>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas" style="border: 1px solid;"></canvas>
+    <canvas id="uiCanvas" style="border: 1px solid;"></canvas>
+    <canvas id="debugCanvas" style="border: 1px solid;"></canvas>
+
+    <div>
+        <select id="ddlAtlas"></select>
+        <select id="ddlAtlasSection"></select>
+
+        <div id="charConfig" style="display: none;">
+        </div>
+
+        <div id="floating-menu"></div>
+
+        <div style="float: right;">
+            <div>
+                PropList
+                <ul id="listProp">
+
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="debug">
+        <canvas id="debugAtlasSection"></canvas>
+        <canvas id="debugAtlas"></canvas>
+    </div>
+
+
+    <script src="https://webgl2fundamentals.org/webgl/resources/webgl-utils.js"></script>
+    <script src="https://webgl2fundamentals.org/webgl/resources/m4.js"></script>
+
+    <script type="module">
+        import engine from '/js/dsv/engine.js';
+        import game from '/js/dsv/game.js';
+        import { atlases, charDefinitions, propsDefinition, createAllAtlas } from '/js/dsv/atlasManager.js';
+        import drawer from '/js/dsv/drawers.js';
+        import propConstruct from '/js/dsv/propConstruct.js';
+        import Character from '/js/dsv/elements/character.js';
+        import charAnimations from '/js/dsv/animations/charAnimation.js';
+        import editor from '/js/dsv/editor.js';
+        import raw from '/js/dsv/shader/raw.js';
+
+        const params = new URLSearchParams(window.location.search);
+        document.getElementById('lbl-user-id').innerHTML = params.get('viewer');
+
+        const lblFps = document.getElementById('lbl-fps');
+        const debug = document.getElementById('debug');
+        const ddlAtlas = document.getElementById('ddlAtlas');
+        const ddlAtlasSection = document.getElementById('ddlAtlasSection');
+
+        engine.resizeCanvas(1920, 190, true);
+
+        const canvas = engine.canvas;
+        const gl = engine.gl;
+        const programData = engine.programData;
+
+        const createChar = (userData) => {
+            const char = new Character({ position: { x: 400, y: 40 }, userData, spawnType: Character.spawnType.portal });
+        }
+
+        window.t = {
+            showDebug: true,
+            engine: engine,
+            atlases: atlases,
+            chars: () => game.getCharList(),
+            props: () => game.getPropList(),
+            dyprops: () => game.getDyPropList(),
+            game: game,
+            programData: programData,
+            globalLight: engine.globalLight,
+            createChar: createChar,
+            createProp: propConstruct.createProp,
+            charDefinitions: charDefinitions,
+            propsDefinition: propsDefinition,
+            spawnEmote: (e) => {
+                let t = '';
+                let childrens = [];
+                if (e == 1) {
+                    t = "https://static-cdn.jtvnw.net/emoticons/v2/emotesv2_dcd06b30a5c24f6eb871e8f5edbd44f7/default/light/2.0";
+                }
+                if (e == 2) {
+                    t = "https://static-cdn.jtvnw.net/emoticons/v2/191764/default/light/2.0";
+                    childrens.push('https://static-cdn.jtvnw.net/emoticons/v2/191762/default/light/2.0');
+                    childrens.push('https://static-cdn.jtvnw.net/emoticons/v2/191763/default/light/2.0');
+                    childrens.push('https://static-cdn.jtvnw.net/emoticons/v2/191763/default/light/2.0');
+                    childrens.push('https://static-cdn.jtvnw.net/emoticons/v2/191763/default/light/2.0');
+                    childrens.push('https://static-cdn.jtvnw.net/emoticons/v2/191763/default/light/2.0');
+                    childrens.push('https://static-cdn.jtvnw.net/emoticons/v2/191763/default/light/2.0');
+                    childrens.push('https://static-cdn.jtvnw.net/emoticons/v2/191767/default/light/2.0');
+                }
+                propConstruct.createDynamic("Emote", { position: { x: canvas.width, y: 100 }, texture: t, childrens: childrens, depth: engine.options.charDepth + 0.1 }, game.drawers['dyprop']);
+            },
+        }
+
+        async function loadJSON(url) {
+            const r = await fetch(url);
+            const t = await r.text();
+            return JSON.parse(t);
+        }
+
+        (async () => {
+            console.log(`Canvas Width: ${canvas.width} / Height: ${canvas.height}`);
+
+            const a = await game.setup(gl);
+            const {
+                propCenarioFBO,
+                cenarioFBO,
+                backgroundFBO,
+                lightFBO,
+                charDrawer,
+                propDrawer,
+                backgroundDrawer,
+                cenarioDrawer,
+                rioDrawer,
+                rawDrawer,
+                dyPropDrawer,
+                lightDrawer,
+            } = a;
+
+            engine.addLight({ pos: { x: 260, y: 100, z: 1 }, color: { r: 1, b: 0, g: 0, a: 1 } });
+
+            setTimeout(() => {
+                createChar();
+            }, 1000);
+            
+            const c = await loadJSON('/js/dsv/cenario/01.json');
+            //const c = await loadJSON('/js/dsv/cenario/stream.json');
+            propConstruct.loadByList(c.props);
+
+            let t = 0;
+            window.portal = game.getPropList().find(x => x.constructor.name == "Portal");
+            window.wagon = game.getPropList().find(x => x.constructor.name == "Wagon");
+            engine.on('everySecond', () => {
+                lblFps.innerHTML = engine.getFramerate();
+            });
+
+            engine.on('everyFrame', () => {
+                t += 0.001;
+
+                backgroundFBO.clearAndListen();
+
+                // DRAW BACKGROUND
+                gl.useProgram(programData['background'].program);
+                gl.activeTexture(gl.TEXTURE0 + backgroundDrawer.atlasIndex);
+                gl.uniform1f(programData['background'].locals.u.timeFactor, (game.time.hour / 12 > 1 ? (((game.time.hour / 12) - 2) * -1) : game.time.hour / 12));
+                gl.bindVertexArray(programData['background'].vao);
+                gl.bindBuffer(gl.ARRAY_BUFFER, programData['background'].transformBuffer);
+                gl.bufferSubData(gl.ARRAY_BUFFER, 0, programData['background'].transformData);
+                gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, 3);
+                gl.bindVertexArray(null);
+                // END DRAW BACKGROUND
+
+                backgroundFBO.unbind();
+
+                // CENARIO FBO
+                propCenarioFBO.clearAndListen();
+                // CENARIO FBO
+
+                // DRAW PROPS
+                gl.useProgram(programData['prop'].program);
+                gl.activeTexture(gl.TEXTURE0 + propDrawer.atlasIndex);
+                gl.activeTexture(gl.TEXTURE0 + propDrawer.normalIndex);
+                gl.bindVertexArray(programData['prop'].vao);
+                gl.bindBuffer(gl.ARRAY_BUFFER, programData['prop'].transformBuffer);
+                gl.bufferSubData(gl.ARRAY_BUFFER, 0, programData['prop'].transformData);
+                gl.drawArraysInstanced(gl.TRIANGLES, 0, 6 * game.getPropList().length, 1);
+                gl.bindVertexArray(null);
+                // END DRAW PROPS
+
+                // DRAW DYPROPS
+                gl.useProgram(programData['dyprop'].program);
+                gl.activeTexture(gl.TEXTURE0 + dyPropDrawer.atlasIndex);
+                gl.bindVertexArray(programData['dyprop'].vao);
+                gl.bindBuffer(gl.ARRAY_BUFFER, programData['dyprop'].transformBuffer);
+                gl.bufferSubData(gl.ARRAY_BUFFER, 0, programData['dyprop'].transformData);
+                gl.drawArraysInstanced(gl.TRIANGLES, 0, 6 * game.getDyPropCount(), 1);
+                gl.bindVertexArray(null);
+                // END DRAW DYPROPS
+
+                // DRAW CHARS
+                gl.useProgram(programData['char'].program);
+                gl.activeTexture(gl.TEXTURE0 + charDrawer.atlasIndex);
+                gl.activeTexture(gl.TEXTURE0 + charDrawer.normalIndex);
+                gl.bindVertexArray(programData['char'].vao);
+                gl.bindBuffer(gl.ARRAY_BUFFER, programData['char'].transformBuffer);
+                gl.bufferSubData(gl.ARRAY_BUFFER, 0, programData['char'].transformData);
+                gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, game.getCharList().length * engine.countOfCharProps);
+                gl.bindVertexArray(null);
+                // END DRAW CHARS
+
+                // END CENARIO FBO
+                propCenarioFBO.unbind();
+                // END CENARIO FBO
+
+                lightFBO.clearAndListen();
+                gl.blendFunc(gl.ONE, gl.ONE);
+                gl.useProgram(programData['light'].program);
+                gl.activeTexture(gl.TEXTURE0 + propCenarioFBO.normalIndex);
+                gl.bindTexture(gl.TEXTURE_2D, propCenarioFBO.normal);
+                gl.activeTexture(gl.TEXTURE0 + propCenarioFBO.objectInfoIndex);
+                gl.bindTexture(gl.TEXTURE_2D, propCenarioFBO.objectInfo);
+                gl.bindVertexArray(programData['light'].vao);
+                gl.useProgram(programData['light'].program);
+                gl.bindBuffer(gl.ARRAY_BUFFER, programData['light'].transformBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, programData['light'].transformData, gl.DYNAMIC_DRAW);
+                // gl.bindBuffer(gl.ARRAY_BUFFER, programData['light'].transformBuffer);
+                // gl.bufferData(gl.ARRAY_BUFFER, 0, programData['light'].transformData);
+                gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, 1);
+                gl.bindVertexArray(null);
+                lightFBO.unbind();
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+                // RIO FBO
+                cenarioFBO.clearAndListen();
+                // RIO FBO
+
+                gl.useProgram(programData['cenario'].program);
+                gl.uniform3f(programData['cenario'].locals.u.globalLightPosition, engine.globalLight.x, engine.globalLight.y, engine.globalLight.z);
+                gl.activeTexture(gl.TEXTURE0 + propCenarioFBO.textureIndex);
+                gl.bindTexture(gl.TEXTURE_2D, propCenarioFBO.texture);
+                gl.activeTexture(gl.TEXTURE0 + propCenarioFBO.normalIndex);
+                gl.bindTexture(gl.TEXTURE_2D, propCenarioFBO.normal);
+                gl.activeTexture(gl.TEXTURE0 + propCenarioFBO.objectInfoIndex);
+                gl.bindTexture(gl.TEXTURE_2D, propCenarioFBO.objectInfo);
+                gl.activeTexture(gl.TEXTURE0 + lightFBO.textureIndex);
+                gl.bindTexture(gl.TEXTURE_2D, lightFBO.texture);
+                gl.activeTexture(gl.TEXTURE0 + backgroundFBO.textureIndex);
+                gl.bindTexture(gl.TEXTURE_2D, backgroundFBO.texture);
+                gl.bindVertexArray(cenarioDrawer.vao);
+                gl.enable(gl.BLEND);
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+                gl.disable(gl.BLEND);
+                gl.bindTexture(gl.TEXTURE_2D, null);
+                gl.bindVertexArray(null);
+
+                // END RIO FBO
+                cenarioFBO.unbind();
+                // END RIO FBO
+
+                gl.enable(gl.BLEND);
+                gl.activeTexture(gl.TEXTURE0 + cenarioFBO.textureIndex);
+                gl.bindTexture(gl.TEXTURE_2D, cenarioFBO.texture);
+
+                gl.useProgram(programData['rio'].program);
+                gl.uniform1f(programData['rio'].locals.u.time, t);
+                gl.activeTexture(gl.TEXTURE0 + cenarioFBO.textureIndex);
+                gl.bindTexture(gl.TEXTURE_2D, cenarioFBO.texture);
+                //gl.activeTexture(gl.TEXTURE0 + cenarioDrawer.normalIndex);
+                //gl.bindTexture(gl.TEXTURE_2D, cenarioDrawer.normal);
+                gl.bindVertexArray(rioDrawer.vao);
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+                gl.useProgram(programData['raw'].program);
+                // gl.activeTexture(gl.TEXTURE0 + cenarioDrawer.normalIndex);
+                // gl.bindTexture(gl.TEXTURE_2D, cenarioDrawer.normal);
+                gl.bindVertexArray(cenarioDrawer.vao);
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+                gl.bindVertexArray(null);
+
+
+                gl.disable(gl.BLEND);
+                gl.bindTexture(gl.TEXTURE_2D, null);
+                gl.bindVertexArray(null);
+
+            });
+            editor.updateDDLAtlases();
+        })();
+
+        if (params.get('viewer')) {
+            fetch('/user-data', {
+                method: 'post', body: JSON.stringify({ userId: params.get('viewer') })
+            }).then(response => response.json()).then(json => {
+                console.log(json);
+            });
+        }
+
+    </script>
+</body>
+
+</html>
