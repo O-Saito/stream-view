@@ -21,6 +21,7 @@ const classes = {
 function createProp(type, data) {
     if (!classes[type]) type = "Prop";
     if (!data.texture) data.texture = classes[type].defaultTexture;
+    data.texture = `/stream-view${data.texture}`;
     const prop = propsDefinition.srcs[data.texture];
     if (prop && !data.size) data.size = { width: prop.w, height: prop.h };
     return new (classes[type])(data);
