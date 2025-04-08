@@ -322,10 +322,10 @@ export const createBackgroundAtlas = async () => {
     };
 
     await Promise.all([
-        loadPropsImage('/world/ceu/estrelas.png'),
-        loadPropsImage('/world/ceu/dia.png'),
-        loadPropsImage('/world/ceu/tarde.png'),
-        loadPropsImage('/world/ceu/noite2.png'),
+        loadPropsImage('/stream-view/world/ceu/estrelas.png'),
+        loadPropsImage('/stream-view/world/ceu/dia.png'),
+        loadPropsImage('/stream-view/world/ceu/tarde.png'),
+        loadPropsImage('/stream-view/world/ceu/noite2.png'),
     ]);
 
     const numOfLayers = data.size;
