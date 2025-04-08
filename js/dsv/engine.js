@@ -302,7 +302,7 @@ programData['char'] = setupProgram({
         const part = char.animationController.parts[type];
         const texOffset = part.currentFrame >= part.texOffset.length ? part.texOffset[0] : part.texOffset[part.currentFrame];
         if (texCoordOffset.x != -char.size.width) {
-          texCoordOffset.x = ((part.isNotSpriteAnimated ? 0 : part.currentFrame) * char.size.width) + (texOffset?.x ?? 0) + (char.size.width * (charDefinitions.srcs[char.preset[type]]?.o ?? 0));
+          texCoordOffset.x = ((part.isNotSpriteAnimated ? 0 : part.currentFrame) * char.size.width) + (texOffset?.x ?? 0) + (char.size.width * (charDefinitions.srcs[`stream-view/${char.preset[type]}`]?.o ?? 0));
         }
         if (texOffset?.ax) pos.x += texOffset?.ax * (char.flipedX() ? 1 : -1);
         if (texOffset?.ay) pos.y += texOffset?.ay;
