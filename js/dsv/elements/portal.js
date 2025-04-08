@@ -2,8 +2,8 @@ import Prop from './prop.js'
 import game from '../game.js'
 import SimpleDraw from '../components/simpleDraw.js';
 
-const openPortalTexture = '/portal/portal-abrindo-sheet.png';
-const idlePortal = '/portal/portal-atlas.png';
+const openPortalTexture = '/stream-view/portal/portal-abrindo-sheet.png';
+const idlePortal = '/stream-view/portal/portal-atlas.png';
 
 class SpawnManager {
 
