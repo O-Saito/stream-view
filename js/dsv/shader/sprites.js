@@ -112,7 +112,7 @@ void main()
 
     fragColor = tex;
     fragColorNormal = normal;
-    objectData = vec4(vObjectId, 0.0, 0.0, vIsLightSource);
+    objectData = vec4(float(vObjectId) / 100.0, 0.0, 0.0, vIsLightSource);
     objectID = vObjectId;
 }`;
 
