@@ -31,8 +31,8 @@ const uiDraws = [];
 
 const globalLight = { x: 1, y: 0, z: 0, run: true };
 
-const lights = { lastIndex: 0 };
-const abcr = [0.3, 0.1, 0.2, 0.4];
+let lastLightIndex = 0;
+const lights = {};
 
 let targetFramerate = 63;
 let on = {};
@@ -238,12 +238,15 @@ export const update2DArrayImage = ({ gl, textureType, texture, textureIndex, wid
   return pbo;
 }
 
-function addLight({ pos, color }) {
-  const lightId = lights.lastIndex++;
+function addLight({ pos, color, radius, intensity, objectId }) {
+  const lightId = lastLightIndex++;
 
   lights[lightId] = {
     pos: { x: pos.x, y: pos.y, z: pos.z },
     color: { r: color.r, g: color.g, b: color.b, a: color.a },
+    radius,
+    intensity,
+    objectId,
   };
 
   return lightId;
@@ -302,7 +305,7 @@ programData['char'] = setupProgram({
         const part = char.animationController.parts[type];
         const texOffset = part.currentFrame >= part.texOffset.length ? part.texOffset[0] : part.texOffset[part.currentFrame];
         if (texCoordOffset.x != -char.size.width) {
-          texCoordOffset.x = ((part.isNotSpriteAnimated ? 0 : part.currentFrame) * char.size.width) + (texOffset?.x ?? 0) + (char.size.width * (charDefinitions.srcs[`stream-view/${char.preset[type]}`]?.o ?? 0));
+          texCoordOffset.x = ((part.isNotSpriteAnimated ? 0 : part.currentFrame) * char.size.width) + (texOffset?.x ?? 0) + (char.size.width * (charDefinitions.srcs[char.preset[type]]?.o ?? 0));
         }
         if (texOffset?.ax) pos.x += texOffset?.ax * (char.flipedX() ? 1 : -1);
         if (texOffset?.ay) pos.y += texOffset?.ay;
@@ -578,6 +581,28 @@ function everyFrame() {
   elapsed = now - then;
   if (elapsed > fpsInterval) {
     then = now - (elapsed % fpsInterval);
+
+    const pdLight = programData['light'];
+    const lightIndexes = Object.getOwnPropertyNames(lights);
+    for (let i = 0; i < lightIndexes.length; i++) {
+      const light = lights[lightIndexes[i]];
+      const dataSize = 9;
+      const index = i * dataSize;
+
+      if (pdLight.transformData.length < (i + 1) * dataSize)
+        pdLight.transformData = new Float32Array([...pdLight.transformData, ...(new Array(dataSize))]);
+
+      pdLight.transformData[index + 0] = light.pos.x;
+      pdLight.transformData[index + 1] = light.pos.y;
+      pdLight.transformData[index + 2] = light.pos.z;
+      pdLight.transformData[index + 3] = light.color.r;
+      pdLight.transformData[index + 4] = light.color.g;
+      pdLight.transformData[index + 5] = light.color.b;
+      pdLight.transformData[index + 6] = light.intensity;
+      pdLight.transformData[index + 7] = light.radius;
+      pdLight.transformData[index + 8] = light.objectId ?? 0;
+    }
+
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     if (on['everyFrame']) {
       for (let i = 0; i < on['everyFrame'].length; i++) {
@@ -614,8 +639,10 @@ export default {
   gl,
   countOfCharProps,
   globalLight,
+  getLightCount: () => Object.getOwnPropertyNames(lights).length,
   getLightPositions: () => [].concat(...Object.getOwnPropertyNames(lights).map(x => [lights[x].pos.x, lights[x].pos.y, lights[x].pos.z])),
   getLight: (id) => lights[id],
+  getLights: () => lights,
   requestUIDraw,
   changeTargetFramerate
 };
