@@ -167,7 +167,7 @@ function setupPropConfig(prop) {
     console.log(prop);
     floatingMenu.innerHTML = `
 <div><label>Type: ${prop.type}</label></div>
-<div><label>Texture: ${prop.texture}</label></div>
+<div><label>Texture: ${prop.texture.length > 50 ? `${prop.texture.substr(0, 47)}...` : prop.texture}</label></div>
 <div>
     <label>Pos </label>
     <label>X: </label>
