@@ -71,7 +71,8 @@ void main()
     // finalColor += texture(uSampler, vTexCoord + vec2(0.0, vPixelSize.y)).rgb * 0.2;
     // finalColor += texture(uSampler, vTexCoord - vec2(0.0, vPixelSize.y)).rgb * 0.2;
 
-    if(texLight.a > 0.0) finalColor += texLight.rgb;
+    if(texLight.a > 0.0) 
+        finalColor += texLight.rgb;
     
     fragColor = vec4(finalColor, alpha);
 }`;
