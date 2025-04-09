@@ -121,7 +121,7 @@
 
         #floating-menu {
             position: absolute;
-            top: 0;
+            top: 250px;
             right: 0;
             color: white;
             background-color: black;
@@ -141,6 +141,7 @@
         <div>
             <button type="button" id="btn-salvar-cenario">Salvar Cenário</button>
             <button type="button" id="btn-add-prop">Adicionar Prop</button>
+            <button type="button" id="btn-list-light">Listar Luz</button>
         </div>
         <div>
             <label>Pick</label>
@@ -150,37 +151,6 @@
                     <option value="char">Char</option>
                 </select>
                 <label id="lblPicking"></label>
-            </div>
-        </div>
-        <br />
-        <div>
-            <label>Luz Global</label>
-            <div>
-                <label class="lbl-range">X(<span class="lbl-range-x-value">&nbsp;</span>)</label>
-                <input type="range" class="rangeLight" data-dir="x" min="-1" max="1" step="0.1" />
-                <label class="lbl-range">Y(<span class="lbl-range-y-value">&nbsp;</span>)</label>
-                <input type="range" class="rangeLight" data-dir="y" min="-1" max="1" step="0.1" />
-                <label class="lbl-range">Z(<span class="lbl-range-z-value">&nbsp;</span>)</label>
-                <input type="range" class="rangeLight" data-dir="z" min="-1" max="1" step="0.1" />
-            </div>
-        </div>
-        <div>
-            <label>Luz Global</label>
-            <div>
-                <label class="lbl-range">A(<span class="lbl-range-0-value">&nbsp;</span>)</label>
-                <input type="range" class="range" data-dir="0" min="0" max="10" step="0.1" />
-                <label class="lbl-range">B(<span class="lbl-range-1-value">&nbsp;</span>)</label>
-                <input type="range" class="range" data-dir="1" min="0" max="10" step="0.1" />
-                <label class="lbl-range">C(<span class="lbl-range-2-value">&nbsp;</span>)</label>
-                <input type="range" class="range" data-dir="2" min="0" max="10" step="0.1" />
-                <label class="lbl-range">R(<span class="lbl-range-3-value">&nbsp;</span>)</label>
-                <input type="range" class="range" data-dir="3" min="0" max="10" step="0.1" />
-                <label class="lbl-range">C(<span class="lbl-range-2-value">&nbsp;</span>)</label>
-
-                <label class="lbl-range">X(<span class="lbl-range-0-0-value">&nbsp;</span>)</label>
-                <input type="range" class="range-pos" data-dir="0" min="0" max="1920" step="1" />
-                <label class="lbl-range">Y(<span class="lbl-range-0-1-value">&nbsp;</span>)</label>
-                <input type="range" class="range-pos" data-dir="1" min="0" max="200" step="1" />
             </div>
         </div>
     </div>

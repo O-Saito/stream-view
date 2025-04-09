@@ -10,6 +10,7 @@ debugCtx.imageSmoothingEnabled = false;
 const floatingMenu = document.getElementById('floating-menu');
 const listProp = document.getElementById('listProp');
 const charConfig = document.getElementById('charConfig');
+const btnListLight = document.getElementById('btn-list-light');
 
 engine.on('everySecond', () => {
     debugCanvas.style.top = `-${engine.canvas.height * 2 + 2}px`;
@@ -428,6 +429,81 @@ for (let i = 0; i < rangePos.length; i++) {
     rangePos[i].onchange = function (e) {
         lightPositions[e.target.dataset.dir] = e.target.value;
         document.getElementsByClassName(`lbl-range-0-${e.target.dataset.dir}-value`)[0].innerHTML = e.target.value;
+    }
+}
+
+function componentToHex(c) {
+    var hex = c.toString(16);
+    return hex.length == 1 ? "0" + hex : hex;
+}
+
+function rgbToHex(r, g, b) {
+    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
+
+function hexToRgb(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
+
+btnListLight.onclick = function () {
+    const lights = engine.getLights();
+    floatingMenu.innerHTML = `
+    <ul>
+    ${Object.getOwnPropertyNames(lights).map(x => {
+        const light = lights[x];
+        const rex = rgbToHex(255 * light.color.r, 255 * light.color.g, 255 * light.color.b);
+        return `
+        <li class='dataset' data-id="${x}">
+            <label>Light ${x}</label>
+            <div>
+                <label>Pos</label>
+                <label>X:</label>
+                <input type="number" data-type='pos' data-inner='x' value="${light.pos.x}" />
+                <label>Y:</label>
+                <input type="number" data-type='pos' data-inner='y' value="${light.pos.y}" />
+                <label>Z:</label>
+                <input type="number" data-type='pos' data-inner='z' value="${light.pos.z}" />
+            </div>
+            <div>
+                <label>Color</label>
+                <input type="color" data-type='color' value="${rex}" />
+            </div>
+            <div>
+                <label>Intensidade</label>
+                <input type="number" data-type='intensity' value="${light.intensity}" />
+                <label>Radius</label>
+                <input type="number" data-type='radius' value="${light.radius}" />
+            </div>
+        </li>`;
+    }).join('')}
+    </ul>`;
+
+    const inputs = floatingMenu.getElementsByTagName('input');
+    for (let i = 0; i < inputs.length; i++) {
+        const input = inputs[i];
+        input.onchange = function () {
+            const id = this.closest('.dataset').dataset.id;
+            const light = engine.getLight(id);
+            if (!light) return;
+
+            const data = this.dataset;
+
+            let value = this.value;
+            if (data.type == 'color') {
+                const rgb = hexToRgb(value);
+                light.color = { r: rgb.r / 255, g: rgb.g / 255, b: rgb.b / 255 };
+                return;
+            }
+
+            value = parseInt(value);
+            if (data.inner) light[data.type][data.inner] = value;
+            else light[data.type] = value;
+        }
     }
 }
 
