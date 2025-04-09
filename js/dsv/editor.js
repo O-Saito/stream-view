@@ -1,6 +1,6 @@
 import engine from './engine.js';
 import game from './game.js';
-import { atlases, charDefinitions, propsDefinition, createAllAtlas } from './atlasManager.js';
+import { atlases, charDefinitions, propsDefinition, dynamicPropDefinition, createAllAtlas } from './atlasManager.js';
 import propConstruct from './propConstruct.js';
 import charAnimations from './animations/charAnimation.js';
 
@@ -14,6 +14,21 @@ const btnListProp = document.getElementById('btn-list-prop');
 const chkDebugBox = document.getElementById('chk-debug-box');
 
 let picking = null;
+
+async function fileToImage(file, id) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        const img = new Image();
+        reader.onload = function (event) {
+            const imageDataURL = event.target.result;
+            img.src = imageDataURL;
+        }
+        reader.readAsDataURL(file);
+        img.onload = function () {
+            resolve({ id, img });
+        }
+    });
+}
 
 function componentToHex(c) {
     var hex = c.toString(16);
@@ -187,8 +202,8 @@ function setupPropConfig(prop) {
         if (e.code == 'KeyQ') prop.depth -= 0.01;
         if (e.code == 'KeyE') prop.depth += 0.01;
 
-        if(prop.depth < 0) prop.depth = 0;
-        if(prop.depth > 1) prop.depth = 1;
+        if (prop.depth < 0) prop.depth = 0;
+        if (prop.depth > 1) prop.depth = 1;
 
         floatingMenu.querySelector('.pos-x').value = prop.position.x;
         floatingMenu.querySelector('.pos-y').value = prop.position.y;
@@ -272,10 +287,66 @@ engine.on('everyFrame', () => {
 });
 
 document.getElementById('btn-add-prop').onclick = function (e) {
+    function isDyProp(c) {
+        if (c.name == "DyProp") return true;
+        let parent = Object.getPrototypeOf(c);
+        while (parent) {
+            if (parent.name == "Element") break;
+            if (parent.name == "DyProp") return true;
+            parent = Object.getPrototypeOf(parent);
+        }
+        return false;
+    }
+
     floatingMenu.innerHTML = `
-<div><label>Texture</label><select class="ddl-texture">${Object.getOwnPropertyNames(propsDefinition.srcs).map(x => `<option>${x}</option>`)}</select></div>
-<div><label>Classee</label><select class="ddl-type">${Object.getOwnPropertyNames(propConstruct.classes).map(x => `<option>${x}</option>`)}</select></div>
-<div><button class="btn-criar">Criar</button><button class="btn-cancelar">Cancelar</button></div>
+<div>
+    <label>Texture</label>
+    <select class="ddl-texture">${Object.getOwnPropertyNames(propsDefinition.srcs).map(x => `<option>${x}</option>`)}</select>
+</div>
+<div>
+    <label>Classee</label>
+    <select class="ddl-type">${Object.getOwnPropertyNames(propConstruct.classes).map(x => isDyProp(propConstruct.classes[x]) ? "" : `<option>${x}</option>`)}</select>
+</div>
+<div>
+    <button class="btn-criar">Criar</button><button class="btn-cancelar">Cancelar</button>
+</div>
+    `;
+    floatingMenu.querySelector('.btn-criar').onclick = function () {
+        propConstruct.createProp(floatingMenu.querySelector('.ddl-type').value, {
+            texture: floatingMenu.querySelector('.ddl-texture').value,
+            position: { x: 0, y: 0 },
+        });
+        floatingMenu.innerHTML = '';
+    }
+    floatingMenu.querySelector('.btn-cancelar').onclick = function () {
+        floatingMenu.innerHTML = '';
+    }
+}
+
+document.getElementById('btn-add-dyprop').onclick = function (e) {
+    function isDyProp(c) {
+        if (c.name == "DyProp") return true;
+        let parent = Object.getPrototypeOf(c);
+        while (parent) {
+            if (parent.name == "Element") break;
+            if (parent.name == "DyProp") return true;
+            parent = Object.getPrototypeOf(parent);
+        }
+        return false;
+    }
+
+    floatingMenu.innerHTML = `
+<div>
+    <label>Texture</label>
+    <select class="ddl-texture">${Object.getOwnPropertyNames(dynamicPropDefinition.srcs).map(x => `<option>${x}</option>`)}</select>
+</div>
+<div>
+    <label>Classee</label>
+    <select class="ddl-type">${Object.getOwnPropertyNames(propConstruct.classes).map(x => !isDyProp(propConstruct.classes[x]) ? "" : `<option>${x}</option>`)}</select>
+</div>
+<div>
+    <button class="btn-criar">Criar</button><button class="btn-cancelar">Cancelar</button>
+</div>
     `;
     floatingMenu.querySelector('.btn-criar').onclick = function () {
         propConstruct.createProp(floatingMenu.querySelector('.ddl-type').value, {
@@ -290,8 +361,7 @@ document.getElementById('btn-add-prop').onclick = function (e) {
 }
 
 document.getElementById('btn-salvar-cenario').onclick = function (e) {
-
-    const json = { props: [] };
+    const json = { props: [], lights: [] };
     const props = game.getPropList();
     for (let i = 0; i < props.length; i++) {
         const p = props[i];
@@ -303,6 +373,48 @@ document.getElementById('btn-salvar-cenario').onclick = function (e) {
         });
     }
     console.log(JSON.stringify(json));
+}
+
+document.getElementById('btn-add-texture').onclick = function (e) {
+    floatingMenu.innerHTML = `
+    <div>
+        <label>Textura</label>
+        <input type="file" id="file-texture" accept=".png" />
+    </div>
+    <div>
+        <label>Normal</label>
+        <input type="file" id="file-normal" accept=".png" />
+    </div>
+    <div>
+        <button type="button" id="btn-salvar-textura" >Salvar</button>
+    </div>
+    `;
+
+    floatingMenu.querySelector('#btn-salvar-textura').onclick = function () {
+        const file = floatingMenu.querySelector('#file-texture').files[0];
+        const fileNormal = floatingMenu.querySelector('#file-normal').files[0];
+
+        console.log(file, fileNormal);
+        let img = null, imgNormal = null;
+
+        if(!file) return;
+
+        Promise.all([ fileToImage(file, 'tex'), ...(fileNormal ? [fileToImage(fileNormal, 'normal')] : []) ]).then((data) => {
+            img = data[0].id == 'tex' ? data[0].img : data[1].img;
+            imgNormal = data[0].id == 'tex' ? data[1].img : data[0].img;
+
+            if(imgNormal && (img.width != imgNormal.width || img.height != imgNormal.height)) {
+                alert('Ow, a imagem tá no tamanho diferente do normal!');
+                return;
+            }
+
+            atlases['dyn_prop'].draw(img, imgNormal);
+            game.drawers['dyprop'].updatePbo();
+            floatingMenu.innerHTML = '';
+            ddlAtlas.onchange();
+        });
+
+    }
 }
 
 debugCanvas.onmousedown = function (e) {
@@ -368,7 +480,7 @@ debugCanvas.onmousemove = function (e) {
     picking.obj.position.y = Math.floor(pos.y - picking.offset.y);
 }
 
-chkDebugBox.onchange = function() {
+chkDebugBox.onchange = function () {
     window.t.showDebug = this.checked;
 }
 
@@ -468,7 +580,7 @@ btnListLight.onclick = function () {
         const rex = rgbToHex(255 * light.color.r, 255 * light.color.g, 255 * light.color.b);
         return `
         <li class='dataset' data-id="${x}">
-            <label>Luz ${x} - Fonte: ${light.objectId ? (game.getGlobal(light.objectId)?.type ?? "" ) : "Nenhuma"}</label>
+            <label>Luz ${x} - Fonte: ${light.objectId ? (game.getGlobal(light.objectId)?.type ?? "") : "Nenhuma"}</label>
             <div>
                 <label>Pos</label>
                 <label>X:</label>

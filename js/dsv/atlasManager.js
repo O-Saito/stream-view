@@ -370,15 +370,17 @@ export const createDynamictPropSpriteAtlas = async () => {
     dynamicPropDefinition.size = 2;
 
     const [c, ctx] = createOffscreenCanvas(data.maxWidth.size, data.maxHeight.size * data.numOfLayers, { willReadFrequently: true });
+    const [cNormal, ctxNormal] = createOffscreenCanvas(data.maxWidth.size, data.maxHeight.size * data.numOfLayers, { willReadFrequently: true });
 
-    const getImageData = () => {
-        return ctx.getImageData(0, 0, data.maxWidth.size, data.maxHeight.size * data.numOfLayers).data;
+    const getImageData = (canvasCtx) => {
+        return canvasCtx.getImageData(0, 0, data.maxWidth.size, data.maxHeight.size * data.numOfLayers).data;
     }
 
-    const draw = (image) => {
+    const draw = (image, normal) => {
         const src=  image.src.replace(location.origin, '');
         if (dynamicPropDefinition.srcs[src]) return;
         ctx.drawImage(image, data.lastOffset.width, data.lastOffset.height);
+        if(normal) ctxNormal.drawImage(normal, data.lastOffset.width, data.lastOffset.height);
         dynamicPropDefinition.srcs[src] = {
             i: 1,
             ow: data.lastOffset.width,
@@ -393,22 +395,19 @@ export const createDynamictPropSpriteAtlas = async () => {
             data.lastOffset.height += image.height;
         }
 
-        atlases['dyn_prop'].imgData = getImageData();
+        atlases['dyn_prop'].imgData = getImageData(ctx);
+        atlases['dyn_prop'].normalImgData = getImageData(ctxNormal);
     }
 
-    const [cNormal, ctxNormal] = createOffscreenCanvas(data.maxWidth.size, data.maxHeight.size * data.numOfLayers);
-
-    const imageDataNormal = ctxNormal.getImageData(0, 0, data.maxWidth.size, data.maxHeight.size * data.numOfLayers).data;
-
     atlases['dyn_prop'] = {
-        canvas: c,
-        ctx: ctx,
         imageHeight: data.maxHeight.size,
         layersCount: data.numOfLayers,
-        imgData: getImageData(),
+        canvas: c,
+        ctx: ctx,
+        imgData: getImageData(ctx),
         normalCanvas: cNormal,
         normalCtx: ctxNormal,
-        normalImgData: imageDataNormal,
+        normalImgData: getImageData(ctxNormal),
         draw,
     };
     return atlases['dyn_prop'];

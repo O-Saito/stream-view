@@ -222,6 +222,7 @@ async function setupDynamicPropDrawer(pd) {
     // Create and bind textures
     const [atlasTexture, atlasIndex] = createTexture(gl, gl.TEXTURE_2D_ARRAY);
     gl.uniform1i(pd.locals.u.atlas, atlasIndex);
+
     const pbo = submit2DArrayImage({
         gl: gl,
         width: atlas.canvas.width,
@@ -229,6 +230,17 @@ async function setupDynamicPropDrawer(pd) {
         imageHeight: atlas.imageHeight,
         layerCount: atlas.layersCount,
         imgData: atlas.imgData
+    });
+
+    const [normalTexture, normalIndex] = createTexture(gl, gl.TEXTURE_2D_ARRAY);
+    gl.uniform1i(pd.locals.u.normalAtlas, normalIndex);
+    const pboNormal = submit2DArrayImage({
+        gl: gl,
+        width: atlas.canvas.width,
+        height: atlas.canvas.height,
+        imageHeight: atlas.imageHeight,
+        layerCount: atlas.layersCount,
+        imgData: atlas.normalImgData
     });
 
     const updatePbo = () => {
@@ -242,6 +254,17 @@ async function setupDynamicPropDrawer(pd) {
             imageHeight: atlas.imageHeight,
             layerCount: atlas.layersCount,
             imgData: atlases['dyn_prop'].imgData
+        });
+        update2DArrayImage({
+            gl: gl,
+            textureType: gl.TEXTURE_2D_ARRAY,
+            texture: normalTexture,
+            textureIndex: normalIndex,
+            width: atlas.canvas.width,
+            height: atlas.canvas.height,
+            imageHeight: atlas.imageHeight,
+            layerCount: atlas.layersCount,
+            imgData: atlases['dyn_prop'].normalImgData
         });
     }
 
@@ -287,10 +310,13 @@ async function setupDynamicPropDrawer(pd) {
     return {
         atlasTexture: atlasTexture,
         atlasIndex: atlasIndex,
+        normalTexture: normalTexture,
+        normalIndex: normalIndex,
         vao: vao,
         dataBuffer: dataBuffer,
         transformBuffer: transformBuffer,
         pbo,
+        pboNormal,
         updatePbo,
     };
 }
