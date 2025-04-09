@@ -8,12 +8,14 @@ in vec3 aLightPos;
 in vec3 aLightColor;
 in float aLightIntensity;
 in float aLightRadius;
+in float aObjectId;
 
 out vec2 vResolution;
 out vec3 vLightPos;
 out vec3 vLightColor;
 out float vIntensity;
 out float vRadius;
+out float vObjectId;
 //out float vAspectRatio;
 
 void main() {
@@ -22,6 +24,7 @@ void main() {
     vIntensity = aLightIntensity;
     vRadius = aLightRadius;
     vResolution = uResolution;
+    vObjectId = aObjectId;
     //vAspectRatio = uResolution.x / uResolution.y;
 
     gl_Position = vec4(aPosition, 0.0, 1.0);
@@ -43,8 +46,13 @@ in vec3 vLightPos;
 in vec3 vLightColor;
 in float vIntensity;
 in float vRadius;
+in float vObjectId;
 
 out vec4 fragColor;
+
+bool low_equal(float a, float b) {
+    return a > b - 0.001 && a < b + 0.001; 
+}
 
 void main() {
     // descarta onde vai ter agua
@@ -66,6 +74,15 @@ void main() {
         fragColor = vec4(0.0);
         return;
     }
+
+    // if(vObjectId != 0.0) {
+    //     float fixId = vObjectId / 100.0;
+    //     if(low_equal(obj.x, fixId)) {
+    //         fragColor = vec4(vLightColor * 0.9, 0.1);
+    //     }
+    //     vec2 screen2UV = vec2(gl_FragCoord.x + 1.0 / vResolution.x, gl_FragCoord.y + 1 / vResolution.y);
+    //     return;
+    // }
 
     if(normalMap == vec3(0.0)) normalMap = vec3(0.5, 0.5, 1.0);
     vec3 normal = normalize(vec3(normalMap.rg * 2.0 - 1.0, normalMap.b));
@@ -92,6 +109,7 @@ const getAttributes = (gl, p) => {
         lightColor: gl.getAttribLocation(p, "aLightColor"),
         lightIntensity: gl.getAttribLocation(p, "aLightIntensity"),
         lightRadius: gl.getAttribLocation(p, "aLightRadius"),
+        objectId: gl.getAttribLocation(p, "aObjectId"),
     }
 };
 
