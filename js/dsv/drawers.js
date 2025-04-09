@@ -532,7 +532,7 @@ async function setupLightDrawer(pd, fbo) {
     gl.uniform1i(pd.locals.u.samplerNormal, fbo.normalIndex);
     gl.uniform1i(pd.locals.u.objectInfo, fbo.objectInfoIndex);
 
-    pd.transformData = new Float32Array([200, canvas.height / 2, 1.0, 1.0, 0.5, 0.0, 1.0, 300.0,]);
+    pd.transformData = new Float32Array([]);
     pd.data = new Float32Array([
         -1, -1, 1, -1, -1, 1,
         1, -1, 1, 1, -1, 1
@@ -570,17 +570,20 @@ async function setupLightDrawer(pd, fbo) {
         { local: pd.locals.a.lightColor, size: 3, type: gl.FLOAT, normalized: false },
         { local: pd.locals.a.lightIntensity, size: 1, type: gl.FLOAT, normalized: false },
         { local: pd.locals.a.lightRadius, size: 1, type: gl.FLOAT, normalized: false },
+        { local: pd.locals.a.objectId, size: 1, type: gl.FLOAT, normalized: false },
     ]);
 
     gl.enableVertexAttribArray(pd.locals.a.lightPosition);
     gl.enableVertexAttribArray(pd.locals.a.lightColor);
     gl.enableVertexAttribArray(pd.locals.a.lightIntensity);
     gl.enableVertexAttribArray(pd.locals.a.lightRadius);
+    gl.enableVertexAttribArray(pd.locals.a.objectId);
 
     gl.vertexAttribDivisor(pd.locals.a.lightPosition, 1);
     gl.vertexAttribDivisor(pd.locals.a.lightColor, 1);
     gl.vertexAttribDivisor(pd.locals.a.lightIntensity, 1);
     gl.vertexAttribDivisor(pd.locals.a.lightRadius, 1);
+    gl.vertexAttribDivisor(pd.locals.a.objectId, 1);
 
     gl.bindVertexArray(null);
 
