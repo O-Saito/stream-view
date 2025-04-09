@@ -187,6 +187,9 @@ function setupPropConfig(prop) {
         if (e.code == 'KeyQ') prop.depth -= 0.01;
         if (e.code == 'KeyE') prop.depth += 0.01;
 
+        if(prop.depth < 0) prop.depth = 0;
+        if(prop.depth > 1) prop.depth = 1;
+
         floatingMenu.querySelector('.pos-x').value = prop.position.x;
         floatingMenu.querySelector('.pos-y').value = prop.position.y;
         floatingMenu.querySelector('.range-depth').value = prop.depth;
@@ -465,7 +468,7 @@ btnListLight.onclick = function () {
         const rex = rgbToHex(255 * light.color.r, 255 * light.color.g, 255 * light.color.b);
         return `
         <li class='dataset' data-id="${x}">
-            <label>Light ${x}</label>
+            <label>Luz ${x} - Fonte: ${light.objectId ? (game.getGlobal(light.objectId)?.type ?? "" ) : "Nenhuma"}</label>
             <div>
                 <label>Pos</label>
                 <label>X:</label>
