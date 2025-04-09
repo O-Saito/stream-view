@@ -67,7 +67,7 @@ export default class Prop extends Element {
         if(oSize.width == 0) oSize.width = this.size.width;
         if(oSize.height == 0) oSize.height = this.size.height;
 
-        const prop = propsDefinition.srcs[texture];
+        const prop = propsDefinition.srcs[texture] ?? propsDefinition.srcs[`/stream-view${texture}`];
         this.texCoordOffset = { x: prop.ow, y: prop.oh };
         this.imageSize = { width: prop.w, height: prop.h };
         this.objectSize = { width: oSize.width, height: oSize.height };
