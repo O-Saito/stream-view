@@ -7,6 +7,22 @@
             "tabs": [],
             "content": [],
             "onLoad": ""
+        },
+        {
+            "tab-button": {
+                "label": "Leaderboard Wave"
+            },
+            "tabs": [],
+            "content": [],
+            "onLoad": ""
+        },
+        {
+            "tab-button": {
+                "label": "Skins"
+            },
+            "tabs": [],
+            "content": [],
+            "onLoad": ""
         }
     ],
     "default": [
