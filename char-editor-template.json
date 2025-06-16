@@ -1,6 +1,18 @@
 {
-    "tabs": [],
-    "default": [ 
-        { "tag": "div", "text": "Salve! Então isso aqui só funciona se o streamer abrir o server, my bad!" } 
-    ] 
+    "tabs": [
+        {
+            "tab-button": {
+                "label": "Leaderboard X1"
+            },
+            "tabs": [],
+            "content": [],
+            "onLoad": ""
+        }
+    ],
+    "default": [
+        {
+            "tag": "div",
+            "text": "Salve! Então isso aqui só funciona se o streamer abrir o server, my bad!"
+        }
+    ]
 }
