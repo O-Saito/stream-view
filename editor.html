@@ -8,7 +8,7 @@
     <style>
         @font-face {
             font-family: 'customFont';
-            src: url('/Kingthings_Exeter.ttf');
+            src: url('/stream-view/Kingthings_Exeter.ttf');
         }
 
         body {
@@ -309,7 +309,7 @@
                 createChar();
             }, 1000);
 
-            const c = await loadJSON('/js/dsv/cenario/01.json');
+            const c = await loadJSON('/stream-view/js/dsv/cenario/01.json');
             //const c = await loadJSON('/js/dsv/cenario/stream.json');
             propConstruct.loadByList(c.props);
 
