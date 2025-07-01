@@ -66,7 +66,7 @@ export const createCharSpriteAtlas = async () => {
 
                 resolve(image);
             }
-            image.src = src;
+            image.src = `/stream-view${src}`;
         });
     };
 
@@ -244,7 +244,7 @@ export const createPropsSpriteAtlas = async () => {
                 imageNormal.src = srcNormal;
             }
 
-            image.src = src;
+            image.src = `/stream-view${src}`;
         });
     };
 
@@ -390,7 +390,7 @@ export const createBackgroundAtlas = async () => {
                 resolve(image);
             }
 
-            image.src = src;
+            image.src =`/stream-view${src}`;
         });
     };
 
@@ -450,7 +450,7 @@ export const createDynamictPropSpriteAtlas = async () => {
     }
 
     const draw = (image, normal) => {
-        const src=  image.src.replace(location.origin, '');
+        const src=  image.src.replace(`${location.origin}/stream-view`, '');
         if (dynamicPropDefinition.srcs[src]) return;
         ctx.drawImage(image, data.lastOffset.width, data.lastOffset.height);
         if(normal) ctxNormal.drawImage(normal, data.lastOffset.width, data.lastOffset.height);
