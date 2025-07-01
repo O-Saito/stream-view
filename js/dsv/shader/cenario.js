@@ -63,8 +63,8 @@ void main()
         finalColor = tex.rgb * mix(objectinfo.a == 1.0 ? SOURCE_LIGHT : MIN_LIGHT, 1.0, brightness);
         alpha = tex.a;
     }
-    vec3 normalizedCoord = vec3((gl_FragCoord.xy / vResolution) * 2.0 - 1.0, gl_FragCoord.z);
-    normalizedCoord.x *= vAspecRatio;
+    //vec3 normalizedCoord = vec3((gl_FragCoord.xy / vResolution) * 2.0 - 1.0, gl_FragCoord.z);
+    //normalizedCoord.x *= vAspecRatio;
 
     // finalColor += texture(uSampler, vTexCoord + vec2(vPixelSize.x, 0.0)).rgb * 0.2;
     // finalColor += texture(uSampler, vTexCoord - vec2(vPixelSize.x, 0.0)).rgb * 0.2;

@@ -21,9 +21,10 @@ const propsDefinition = atlasManager.propsDefinition;
 const dyPropsDefinition = atlasManager.dynamicPropDefinition;
 
 const countOfLight = 10;
-const countOfCharProps = 7;
+const countOfCharProps = 11;
 const options = {
   charDepth: 0.10,
+  currentCharDepth: 0,
   charNameOffset: 14,
 };
 
@@ -33,8 +34,9 @@ const globalLight = { x: 1, y: 0, z: 0, run: true };
 
 let lastLightIndex = 0;
 const lights = {};
+const textsFade = {};
 
-let targetFramerate = 63;
+let targetFramerate = 60;
 let on = {};
 let framerate = 0;
 let textureIndex = 0;
@@ -46,6 +48,29 @@ export const programData = {};
 const changeTargetFramerate = (newTarget) => {
   targetFramerate = newTarget;
   fpsInterval = 1000 / targetFramerate + 1;
+}
+
+function textFade(text, { position, framesToFade, depth = 999, onFrameMoveDirection = {}, rgb = {}, style = {} } = {}) {
+  let id = new Date().getTime();
+  while (textsFade[id]) id = new Date().getTime() + 1;
+
+  if (!onFrameMoveDirection.x) onFrameMoveDirection.x = 0;
+  if (!onFrameMoveDirection.y) onFrameMoveDirection.y = 0;
+
+  if (!rgb.r) rgb.r = 0;
+  if (!rgb.g) rgb.g = 0;
+  if (!rgb.b) rgb.b = 0;
+
+  textsFade[id] = {
+    text: text,
+    startPosition: position,
+    framesToFade: framesToFade,
+    onFrameMoveDirection: onFrameMoveDirection,
+    depth: depth,
+    rgb: rgb,
+    style: style,
+  };
+  return id;
 }
 
 export const requestUIDraw = ({ depth, f }) => {
@@ -260,7 +285,7 @@ programData['char'] = setupProgram({
   getUniforms: (p) => { return sprites.getUniforms(gl, p); },
   getAttributes: (p) => { return sprites.getAttributes(gl, p); },
   addToTransform: (o, countOfChars) => {
-    const dataLength = 12;
+    const dataLength = 17;
     const dataSize = dataLength * countOfCharProps;
     const pd = programData['char'];
     if (dataSize * countOfChars <= pd.transformData.length) return;
@@ -270,45 +295,54 @@ programData['char'] = setupProgram({
     gl.bindBuffer(gl.ARRAY_BUFFER, pd.transformBuffer);
     // gl.drawArrays(gl.POINTS, 0, 4);
 
+    const arr = [];
+
+    for (let i = 0; i < countOfCharProps; i++) {
+      arr.push(1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,);
+    }
+
     pd.transformData = new Float32Array([
       ...pd.transformData,
-      1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
+      ...arr
     ]);
     gl.bufferData(gl.ARRAY_BUFFER, pd.transformData, gl.DYNAMIC_DRAW);
     gl.bindVertexArray(null);
   },
   updateTransformPart: (char, charDefinitions) => {
-    const dataLength = 12;
+    const dataLength = 17;
     const dataSize = dataLength * countOfCharProps;
     const pd = programData['char'];
 
-    let d = char.depth;
+    let d = char.depth == options.charDepth ? options.currentCharDepth : char.depth;
     let skip = 0;
     const setData = (i, type) => {
+      const preset = char.getCurrentPreset(type);
+
       i = i + skip;
       const pos = { x: char.position.x, y: char.position.y };
       const texCoordOffset = { x: 0, y: 0 };
-      let animationLayer = char.preset[type] == undefined ? 0 : charDefinitions.calcDepth(char.preset[type]);
+      let rotation = 0;
+      let animationLayer = preset == undefined ? 0 : charDefinitions.calcDepth(preset);
 
-      if (char.preset[type] == undefined) {
+      if (preset == undefined) {
         texCoordOffset.x = -char.size.width;
         texCoordOffset.y = -char.size.height;
       }
 
       if (char.animationController.partsName.find(x => x == type)) {
         const part = char.animationController.parts[type];
+        rotation = part.rotation ?? 0;
         const texOffset = part.currentFrame >= part.texOffset.length ? part.texOffset[0] : part.texOffset[part.currentFrame];
         if (texCoordOffset.x != -char.size.width) {
           texCoordOffset.x = ((part.isNotSpriteAnimated ? 0 : part.currentFrame) * char.size.width) + (texOffset?.x ?? 0) + (char.size.width * (charDefinitions.srcs[char.preset[type]]?.o ?? 0));
         }
         if (texOffset?.ax) pos.x += texOffset?.ax * (char.flipedX() ? 1 : -1);
         if (texOffset?.ay) pos.y += texOffset?.ay;
+
+        if (part.logicOffset) {
+          if (part.logicOffset.x) pos.x += part.logicOffset.x;
+          if (part.logicOffset.y) pos.y += part.logicOffset.y;
+        }
       } else {
         if (char.currentFrame != undefined && char.currentFrame != null) {
           texCoordOffset.x = (char.currentFrame ?? 0) * char.size.width;
@@ -326,17 +360,27 @@ programData['char'] = setupProgram({
       pd.transformData[i + 9] = char.size.height;
       pd.transformData[i + 10] = char.localGlobalId ?? 0;
       pd.transformData[i + 11] = char.isLightSource ? 1 : 0;
+      pd.transformData[i + 12] = rotation;
+      pd.transformData[i + 13] = char.replaceColor ? char.replaceColor.r / 255 : 0.0;
+      pd.transformData[i + 14] = char.replaceColor ? char.replaceColor.g / 255 : 0.0;
+      pd.transformData[i + 15] = char.replaceColor ? char.replaceColor.b / 255 : 0.0;
+      pd.transformData[i + 16] = char.replaceColor ? 1.0 : 0.0;
       d -= 0.0001;
+      options.currentCharDepth -= 0.0001;
       skip += dataLength;
     }
 
     setData(char.index * dataSize, 'capeBack');
     setData(char.index * dataSize, 'legs');
+    setData(char.index * dataSize, 'pants');
     setData(char.index * dataSize, 'body');
-    setData(char.index * dataSize, 'capeFront');
+    setData(char.index * dataSize, 'chest');
+    setData(char.index * dataSize, 'weapon');
     setData(char.index * dataSize, 'head');
     setData(char.index * dataSize, 'face');
     setData(char.index * dataSize, 'helmet');
+    setData(char.index * dataSize, 'capeFront');
+    setData(char.index * dataSize, 'second_weapon');
   }
 });
 
@@ -372,12 +416,12 @@ programData['prop'] = setupProgram({
     const imageLayer = propsDefinition.calcDepth(p.texture);
 
     const data = [
-      0, 0, tc.x, tc.y, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1,
-      pos.w, 0, tc.xw, tc.y, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1,
-      0, pos.h, tc.x, tc.yh, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1,
-      pos.w, 0, tc.xw, tc.y, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1,
-      pos.w, pos.h, tc.xw, tc.yh, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1,
-      0, pos.h, tc.x, tc.yh, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1,];
+      0, 0, tc.x, tc.y, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+      pos.w, 0, tc.xw, tc.y, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+      0, pos.h, tc.x, tc.yh, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+      pos.w, 0, tc.xw, tc.y, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+      pos.w, pos.h, tc.xw, tc.yh, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+      0, pos.h, tc.x, tc.yh, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,];
 
     if (data.length * countOfProp <= pd.transformData.length) return;
     pd.transformData = new Float32Array([
@@ -392,7 +436,7 @@ programData['prop'] = setupProgram({
     let d = 1;
 
     let skip = 4;
-    let attrib = 12;
+    let attrib = 17;
     let vertex = 6;
     let i = prop.index * ((skip + attrib) * vertex);
     const pos = { x: prop.position.x, y: prop.position.y };
@@ -419,6 +463,11 @@ programData['prop'] = setupProgram({
       pd.transformData[atual + 9] = prop.size.height;
       pd.transformData[atual + 10] = prop.localGlobalId ?? 0;
       pd.transformData[atual + 11] = prop.isLightSource ? 1 : 0;
+      pd.transformData[atual + 12] = 0; // rotation
+      pd.transformData[atual + 13] = 0; // replaceColor
+      pd.transformData[atual + 14] = 0; // replaceColor
+      pd.transformData[atual + 15] = 0; // replaceColor
+      pd.transformData[atual + 16] = 0; // replaceColor
     }
     d -= 0.0001;
   }
@@ -456,12 +505,12 @@ programData['dyprop'] = setupProgram({
     const imageLayer = dyPropsDefinition.calcDepth(p.texture);
     pd.transformData = new Float32Array([
       ...pd.transformData,
-      0, 0, tc.x, tc.y, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1,
-      pos.w, 0, tc.xw, tc.y, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1,
-      0, pos.h, tc.x, tc.yh, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1,
-      pos.w, 0, tc.xw, tc.y, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1,
-      pos.w, pos.h, tc.xw, tc.yh, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1,
-      0, pos.h, tc.x, tc.yh, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1,
+      0, 0, tc.x, tc.y, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+      pos.w, 0, tc.xw, tc.y, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+      0, pos.h, tc.x, tc.yh, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+      pos.w, 0, tc.xw, tc.y, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+      pos.w, pos.h, tc.xw, tc.yh, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+      0, pos.h, tc.x, tc.yh, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
     ]);
     // pd.transformData = new Float32Array([
     //   ...pd.transformData,
@@ -481,7 +530,7 @@ programData['dyprop'] = setupProgram({
     let d = 1;
 
     let skip = 4;
-    let attrib = 12;
+    let attrib = 17;
     let vertex = 6;
     let i = (prop.parent ? prop.parent.index + prop.index : prop.index) * ((skip + attrib) * vertex);
     const pos = { x: prop.position.x, y: prop.position.y };
@@ -514,6 +563,11 @@ programData['dyprop'] = setupProgram({
       pd.transformData[atual + 9] = prop.size.height;
       pd.transformData[atual + 10] = prop.localGlobalId ?? 0;
       pd.transformData[atual + 11] = prop.isLightSource ? 1 : 0;
+      pd.transformData[atual + 12] = 0; // rotation
+      pd.transformData[atual + 13] = 0; // replaceColor
+      pd.transformData[atual + 14] = 0; // replaceColor
+      pd.transformData[atual + 15] = 0; // replaceColor
+      pd.transformData[atual + 16] = 0; // replaceColor
     }
     d -= 0.0001;
   },
@@ -521,7 +575,7 @@ programData['dyprop'] = setupProgram({
     const pd = programData['dyprop'];
 
     let skip = 4;
-    let attrib = 12;
+    let attrib = 17;
     let vertex = 6;
     let i = 1 * ((skip + attrib) * vertex);
 
@@ -582,6 +636,49 @@ function everyFrame() {
   if (elapsed > fpsInterval) {
     then = now - (elapsed % fpsInterval);
 
+    Object.getOwnPropertyNames(textsFade).forEach(id => {
+      const text = textsFade[id];
+
+      if (!text.currentPosition) text.currentPosition = { x: text.startPosition.x, y: text.startPosition.y };
+      if (text.currentFrame == undefined) text.currentFrame = -1;
+      text.currentFrame++;
+
+      if (text.currentFrame > text.framesToFade) {
+        delete textsFade[id];
+        return;
+      }
+
+      text.currentPosition.x += text.onFrameMoveDirection.x;
+      text.currentPosition.y += text.onFrameMoveDirection.y;
+
+      requestUIDraw({
+        depth: text.depth, f: ({ c, ctx }) => {
+          try {
+            ctx.save();
+            ctx.lineWidth = text.style.lineWidth ?? 0.1;
+            ctx.fillStyle = `rgba(${text.rgb.r}, ${text.rgb.g}, ${text.rgb.b}, ${1 - (text.currentFrame / text.framesToFade)})`;
+            ctx.font = `${text.style.fontWeight ?? '300'} ${text.style.fontSize ?? '18px'} customFont`;
+
+            let metrics = ctx.measureText(text.text);
+            let textWidth = metrics.width;
+            const pos = {
+              x: text.currentPosition.x - (textWidth / 2),
+              y: canvas.height - (text.currentPosition.y)
+            };
+
+            ctx.fillText(text.text, pos.x, pos.y);
+            if (text.style.strokeStyle) {
+              ctx.strokeStyle = text.style.strokeStyle ?? 'white';
+              ctx.strokeText(text.text, pos.x, pos.y);
+            }
+            ctx.restore();
+          } catch (error) {
+            console.error(error);
+          }
+        }
+      });
+    });
+
     const pdLight = programData['light'];
     const lightIndexes = Object.getOwnPropertyNames(lights);
     for (let i = 0; i < lightIndexes.length; i++) {
@@ -604,6 +701,7 @@ function everyFrame() {
     }
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    options.currentCharDepth = options.charDepth;
     if (on['everyFrame']) {
       for (let i = 0; i < on['everyFrame'].length; i++) {
         on['everyFrame'][i]();
@@ -633,6 +731,7 @@ export default {
   on: (action, func) => { if (!on[action]) on[action] = []; on[action].push(func); },
   getFramerate: () => framerate,
   addLight,
+  textFade,
   options,
   programData,
   canvas,

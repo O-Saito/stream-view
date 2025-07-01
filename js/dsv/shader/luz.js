@@ -37,7 +37,6 @@ const float MIN_LIGHT = 0.4;
 const float DIFFUSE_MAX = 0.6;
 const float DIFFUSE_MIN = 0.2;
 
-
 uniform sampler2D uSamplerNormal;
 uniform sampler2D uObjectInfo;
 

@@ -30,6 +30,7 @@ export default class Element {
     }
 
     remove() {
+        this.isEnable = false;
         this.elements.forEach(x => x.remove());
         if(this.onRemove) this.onRemove();
     }
@@ -43,6 +44,7 @@ export default class Element {
         el.parent = this;
         el.index = this.elements.length + 1;
         this.elements.push(el);
+        return el;
     }
 
     flipedX() {

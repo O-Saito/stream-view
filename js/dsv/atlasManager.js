@@ -1,4 +1,3 @@
-
 const calcDepth = (def, src) => {
     return def.size - 1 - def.srcs[src]?.i ?? 0;
 }
@@ -75,21 +74,91 @@ export const createCharSpriteAtlas = async () => {
     const props1 = [];
 
     await Promise.all([
-        loadCharImage('/stream-view/char/body/skeleton/new_legs.png', [imgs]),
-        loadCharImage('/stream-view/char/body/skeleton/new_body.png', [imgs]),
-        loadCharImage('/stream-view/char/body/skeleton/new_head.png', [imgs]),
-        loadCharImage('/stream-view/char/body/skeleton/legs.png', [imgs]),
-        loadCharImage('/stream-view/char/body/skeleton/body.png', [imgs]),
-        loadCharImage('/stream-view/char/body/skeleton/head.png', [imgs]),
-        loadCharImage('/stream-view/char/props-especial/face/moustache.png', [imgs]),
-        loadCharImage('/stream-view/char/props-especial/cape/cape_front.png', [imgs]),
-        loadCharImage('/stream-view/char/props-especial/cape/cape_back.png', [imgs]),
-        loadCharImage('/stream-view/char/props/helmet/blackpower.png', [imgs, props1]),
-        loadCharImage('/stream-view/char/props/helmet/bruxo.png', [imgs, props1]),
-        loadCharImage('/stream-view/char/props/helmet/coroa.png', [imgs, props1]),
-        loadCharImage('/stream-view/char/props/helmet/mugi.png', [imgs, props1]),
-        loadCharImage('/stream-view/char/props/helmet/sjins.png', [imgs, props1]),
-        loadCharImage('/stream-view/char/props/helmet/ninja.png', [imgs, props1]),
+        // Skeleton
+        loadCharImage('/char/body/skeleton/head/default.png', [imgs]),
+        loadCharImage('/char/body/skeleton/head/attack.png', [imgs]),
+        loadCharImage('/char/body/skeleton/head/attackbow.png', [imgs]),
+        loadCharImage('/char/body/skeleton/head/jump.png', [imgs]),
+        loadCharImage('/char/body/skeleton/head/def.png', [imgs]),
+        loadCharImage('/char/body/skeleton/head/bran.png', [imgs]),
+        
+        loadCharImage('/char/body/skeleton/body/default.png', [imgs]),
+        loadCharImage('/char/body/skeleton/body/jump.png', [imgs]),
+        loadCharImage('/char/body/skeleton/body/attack.png', [imgs]),
+        loadCharImage('/char/body/skeleton/body/attackbow.png', [imgs]),
+        loadCharImage('/char/body/skeleton/body/def.png', [imgs]),
+        loadCharImage('/char/body/skeleton/body/bran.png', [imgs]),
+
+        loadCharImage('/char/body/skeleton/legs/default.png', [imgs]),
+        loadCharImage('/char/body/skeleton/legs/attack.png', [imgs]),
+        loadCharImage('/char/body/skeleton/legs/attackbow.png', [imgs]),
+        loadCharImage('/char/body/skeleton/legs/jump.png', [imgs]),
+        loadCharImage('/char/body/skeleton/legs/def.png', [imgs]),
+        loadCharImage('/char/body/skeleton/legs/bran.png', [imgs]),
+        // End Skeleton
+        
+        // Human
+        loadCharImage('/char/body/human/head/default.png', [imgs]),
+        //loadCharImage('/char/body/human/head/attack.png', [imgs]),
+        //loadCharImage('/char/body/human/head/attackbow.png', [imgs]),
+        //loadCharImage('/char/body/human/head/jump.png', [imgs]),
+        //loadCharImage('/char/body/human/head/def.png', [imgs]),
+        //loadCharImage('/char/body/human/head/bran.png', [imgs]),
+        
+        loadCharImage('/char/body/human/body/default.png', [imgs]),
+        //loadCharImage('/char/body/human/body/jump.png', [imgs]),
+        //loadCharImage('/char/body/human/body/attack.png', [imgs]),
+        //loadCharImage('/char/body/human/body/attackbow.png', [imgs]),
+        //loadCharImage('/char/body/human/body/def.png', [imgs]),
+        //loadCharImage('/char/body/human/body/bran.png', [imgs]),
+
+        loadCharImage('/char/body/human/legs/default.png', [imgs]),
+        //loadCharImage('/char/body/human/legs/attack.png', [imgs]),
+        //loadCharImage('/char/body/human/legs/attackbow.png', [imgs]),
+        //loadCharImage('/char/body/human/legs/jump.png', [imgs]),
+        //loadCharImage('/char/body/human/legs/def.png', [imgs]),
+        //loadCharImage('/char/body/human/legs/bran.png', [imgs]),
+        // End Human
+
+        // Espada default
+        loadCharImage('/char/props/equip/espada/default.png', [imgs]),
+        loadCharImage('/char/props/equip/espada/attack.png', [imgs]),
+        loadCharImage('/char/props/equip/espada/jump.png', [imgs]),
+        loadCharImage('/char/props/equip/espada/def.png', [imgs]),
+        loadCharImage('/char/props/equip/espada/drop.png', [imgs]),
+        // End Espada default
+
+        // Escudo default
+        loadCharImage('/char/props/equip/escudo_madeira/default.png', [imgs]),
+        loadCharImage('/char/props/equip/escudo_madeira/attack.png', [imgs]),
+        loadCharImage('/char/props/equip/escudo_madeira/jump.png', [imgs]),
+        loadCharImage('/char/props/equip/escudo_madeira/def.png', [imgs]),
+        loadCharImage('/char/props/equip/escudo_madeira/drop.png', [imgs]),
+        // End Escudo default
+
+        // Arco default
+        loadCharImage('/char/props/equip/arco/default.png', [imgs]),
+        // End Arco default
+
+        // Props default
+        loadCharImage('/char/props/helmet/blackpower.png', [imgs, props1]),
+        loadCharImage('/char/props/helmet/bruxo.png', [imgs, props1]),
+        loadCharImage('/char/props/helmet/coroa.png', [imgs, props1]),
+        loadCharImage('/char/props/helmet/mugi.png', [imgs, props1]),
+        loadCharImage('/char/props/helmet/sjins.png', [imgs, props1]),
+        loadCharImage('/char/props/helmet/ninja.png', [imgs, props1]),
+        // End Props default
+
+        // Props Chest Leather
+        loadCharImage('/char/props/chest/leather/default.png', [imgs]),
+        loadCharImage('/char/props/pants/leather/default.png', [imgs]),
+
+        // End Props Chest Leather
+
+        // Props Especial
+        loadCharImage('/char/props-especial/face/moustache.png', [imgs]),
+        loadCharImage('/char/props-especial/cape/cape_front.png', [imgs]),
+        loadCharImage('/char/props-especial/cape/cape_back.png', [imgs]),
     ]);
 
     let width = imgs[1].width + 64;
@@ -180,23 +249,27 @@ export const createPropsSpriteAtlas = async () => {
     };
 
     await Promise.all([
-        loadPropsImage('/stream-view/world/props/casa.png'),
-        loadPropsImage('/stream-view/world/props/bonfas.png'),
-        loadPropsImage('/stream-view/world/natural/arvore.png'),
-        loadPropsImage('/stream-view/world/natural/chao.png'),
-        loadPropsImage('/stream-view/world/natural/chao2.png'),
-        loadPropsImage('/stream-view/world/natural/grama.png'),
-        loadPropsImage('/stream-view/world/natural/moita.png'),
-        //loadPropsImage('/world/natural/moita2.png'),
-        loadPropsImage('/stream-view/world/natural/nuvem.png'),
-        loadPropsImage('/stream-view/world/props/carroca.png', '/stream-view/world/props/carroca-normal.png'),
-        //loadPropsImage('/stream-view/teste2.png', '/teste2-normalmap.png'),
-        //loadPropsImage('/stream-view/Atlas_new_parado.png'),
-        //loadPropsImage('/stream-view/Atlas_new_Braco_aberto.png'),
-        loadPropsImage('/stream-view/portal/portal-atlas.png'),
-        loadPropsImage('/stream-view/portal/portal-abrindo-sheet.png'),
-        //loadPropsImage('/stream-view/quadrado-normal.png', '/stream-view/quadrado-normal.png'),
-        //loadPropsImage('/stream-view/teste.png', '/stream-view/teste-normalmap.png'),
+        loadPropsImage('/world/props/casa.png'),
+        loadPropsImage('/world/props/bonfas.png'),
+        loadPropsImage('/world/natural/arvore.png'),
+        loadPropsImage('/world/natural/chao.png'),
+        loadPropsImage('/world/natural/chao2.png'),
+        loadPropsImage('/world/natural/grama.png'),
+        loadPropsImage('/world/natural/moita.png'),
+        loadPropsImage('/world/natural/moita2.png'),
+        loadPropsImage('/world/natural/nuvem.png'),
+        loadPropsImage('/world/props/carroca.png', '/world/props/carroca-normal.png'),
+        loadPropsImage('/teste2.png', '/teste2-normalmap.png'),
+        loadPropsImage('/Atlas_new_parado.png'),
+        loadPropsImage('/Atlas_new_Braco_aberto.png'),
+        loadPropsImage('/portal/portal-atlas.png'),
+        loadPropsImage('/portal/portal-abrindo-sheet.png'),
+        loadPropsImage('/quadrado-normal.png', '/quadrado-normal.png'),
+        loadPropsImage('/teste.png', '/teste-normalmap.png'),
+        loadPropsImage('/Rodas_carroca.png'),
+        loadPropsImage('/Rodas_carroca.png'),
+        loadPropsImage('/world/atk/flecha.png'),
+        loadPropsImage('/world/effect/exhaust.png'),
         //loadPropsImage('/cone-normal.png', '/cone-normal.png'),
         //loadPropsImage('/circulo-normal.png', '/circulo-normal.png'),
         //loadPropsImage('/dunnot-normal.png', '/dunnot-normal.png'),
@@ -322,10 +395,10 @@ export const createBackgroundAtlas = async () => {
     };
 
     await Promise.all([
-        loadPropsImage('/stream-view/world/ceu/estrelas.png'),
-        loadPropsImage('/stream-view/world/ceu/dia.png'),
-        loadPropsImage('/stream-view/world/ceu/tarde.png'),
-        loadPropsImage('/stream-view/world/ceu/noite2.png'),
+        loadPropsImage('/world/ceu/estrelas.png'),
+        loadPropsImage('/world/ceu/dia.png'),
+        loadPropsImage('/world/ceu/tarde.png'),
+        loadPropsImage('/world/ceu/noite2.png'),
     ]);
 
     const numOfLayers = data.size;

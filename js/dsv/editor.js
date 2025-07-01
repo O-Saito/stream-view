@@ -78,7 +78,7 @@ function setupCharConfig(picked) {
                         <p>
                         <p>
                             <span>frames</span><br/>
-                            ${p.frames.map((y, i) => {
+                            ${!p || !p.frames ? '' : p.frames.map((y, i) => {
                 return `<span>frames [${i}]</span><br/>
                                 X: <input type="number" value="${y ? y.x ?? "0" : "0"}" />
                                 Y: <input type="number" value="${y ? y.y ?? "0" : "0"}" />
@@ -284,6 +284,13 @@ engine.on('everyFrame', () => {
     //     debugCtx.drawImage(window.images[0], 0, 0, window.images[0].width, window.images[0].height);
     //     console.log(window.images[0].width, window.images[0].height);
     // }
+    const fixArenaY = debugCanvas.height - game.arena.position.y;
+    debugCtx.lineWidth = 1;
+    debugCtx.strokeStyle = "green";
+    debugCtx.beginPath();
+    debugCtx.rect(game.arena.position.x, fixArenaY, game.arena.size.width, -game.arena.size.height);
+    debugCtx.stroke();
+
 });
 
 document.getElementById('btn-add-prop').onclick = function (e) {

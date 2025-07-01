@@ -1,9 +1,10 @@
 import Prop from './prop.js'
 import game from '../game.js'
+import engine from '../engine.js'
 import SimpleDraw from '../components/simpleDraw.js';
 
-const openPortalTexture = '/stream-view/portal/portal-abrindo-sheet.png';
-const idlePortal = '/stream-view/portal/portal-atlas.png';
+const openPortalTexture = '/portal/portal-abrindo-sheet.png';
+const idlePortal = '/portal/portal-atlas.png';
 
 class SpawnManager {
 
@@ -30,8 +31,8 @@ class SpawnManager {
         for (let i = 0; i < this.despawnChar.length; i++) {
             const dsc = this.despawnChar[i];
             const char = game.getChar(dsc.id);
-            if(!char) continue;
-            if(dsc.status == SpawnManager.Status.waitingPortal) return true;
+            if (!char) continue;
+            if (dsc.status == SpawnManager.Status.waitingPortal) return true;
         }
         return false;
     }
@@ -72,6 +73,18 @@ export default class Portal extends Prop {
         this.components.push(new SimpleDraw(this, this.texture, (draw) => { return this.onAnimationDone(draw); }));
         Portal.spawnManager.registerPortal(this);
         this.closestFloor = null;
+
+        this.lightId = engine.addLight({
+            pos: {
+                x: this.position.x + this.objectSize.width / 2,
+                y: this.position.y - this.objectSize.height / 2,
+                z: 1
+            },
+            color: { r: 0.5, g: 0, b: 0.5 },
+            intensity: 1.0,
+            radius: this.objectSize.width > this.objectSize.height ? this.objectSize.width : this.objectSize.height,
+            objectId: this.localGlobalId,
+        });
         this.enable();
     }
 
@@ -115,7 +128,7 @@ export default class Portal extends Prop {
             }
 
             if (e.status == SpawnManager.Status.waitingPortal) {
-                if(!this.fullOpen) continue;
+                if (!this.fullOpen) continue;
                 char.move.setDestiny({
                     x: portalCenter,
                     cinematicId: e.cinnematicId,
@@ -177,6 +190,7 @@ export default class Portal extends Prop {
             }
 
             if (e.status == SpawnManager.Status.ended) {
+                char.doneSpawning();
                 remove.push(e.id);
             }
         }

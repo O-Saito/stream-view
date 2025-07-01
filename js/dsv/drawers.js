@@ -85,6 +85,8 @@ async function setupCharDrawer(pd) {
         { local: pd.locals.a.spriteSize, size: 2, type: gl.FLOAT, normalized: false },
         { local: pd.locals.a.objectId, size: 1, type: gl.FLOAT, normalized: false },
         { local: pd.locals.a.isLightSource, size: 1, type: gl.FLOAT, normalized: false },
+        { local: pd.locals.a.rotation, size: 1, type: gl.FLOAT, normalized: false },
+        { local: pd.locals.a.replaceColor, size: 4, type: gl.FLOAT, normalized: false },
     ]);
 
     gl.vertexAttribDivisor(pd.locals.a.positionOffset, 1);
@@ -95,6 +97,8 @@ async function setupCharDrawer(pd) {
     gl.vertexAttribDivisor(pd.locals.a.spriteSize, 1);
     gl.vertexAttribDivisor(pd.locals.a.objectId, 1);
     gl.vertexAttribDivisor(pd.locals.a.isLightSource, 1);
+    gl.vertexAttribDivisor(pd.locals.a.rotation, 1);
+    gl.vertexAttribDivisor(pd.locals.a.replaceColor, 1);
 
     gl.enableVertexAttribArray(pd.locals.a.positionOffset);
     gl.enableVertexAttribArray(pd.locals.a.frameOffset);
@@ -104,6 +108,8 @@ async function setupCharDrawer(pd) {
     gl.enableVertexAttribArray(pd.locals.a.spriteSize);
     gl.enableVertexAttribArray(pd.locals.a.objectId);
     gl.enableVertexAttribArray(pd.locals.a.isLightSource);
+    gl.enableVertexAttribArray(pd.locals.a.rotation);
+    gl.enableVertexAttribArray(pd.locals.a.replaceColor);
 
     gl.bindVertexArray(null);
 
@@ -179,6 +185,8 @@ async function setupPropDrawer(pd) {
         { local: pd.locals.a.spriteSize, size: 2, type: gl.FLOAT, normalized: false },
         { local: pd.locals.a.objectId, size: 1, type: gl.FLOAT, normalized: false },
         { local: pd.locals.a.isLightSource, size: 1, type: gl.FLOAT, normalized: false },
+        { local: pd.locals.a.rotation, size: 1, type: gl.FLOAT, normalized: false },
+        { local: pd.locals.a.replaceColor, size: 4, type: gl.FLOAT, normalized: false },
     ]);
 
     gl.enableVertexAttribArray(pd.locals.a.position);
@@ -191,6 +199,8 @@ async function setupPropDrawer(pd) {
     gl.enableVertexAttribArray(pd.locals.a.spriteSize);
     gl.enableVertexAttribArray(pd.locals.a.objectId);
     gl.enableVertexAttribArray(pd.locals.a.isLightSource);
+    gl.enableVertexAttribArray(pd.locals.a.rotation);
+    gl.enableVertexAttribArray(pd.locals.a.replaceColor);
 
     gl.bindVertexArray(null);
 
@@ -292,6 +302,8 @@ async function setupDynamicPropDrawer(pd) {
         { local: pd.locals.a.spriteSize, size: 2, type: gl.FLOAT, normalized: false },
         { local: pd.locals.a.objectId, size: 1, type: gl.FLOAT, normalized: false },
         { local: pd.locals.a.isLightSource, size: 1, type: gl.FLOAT, normalized: false },
+        { local: pd.locals.a.rotation, size: 1, type: gl.FLOAT, normalized: false },
+        { local: pd.locals.a.replaceColor, size: 4, type: gl.FLOAT, normalized: false },
     ]);
 
     gl.enableVertexAttribArray(pd.locals.a.position);
@@ -304,6 +316,8 @@ async function setupDynamicPropDrawer(pd) {
     gl.enableVertexAttribArray(pd.locals.a.spriteSize);
     gl.enableVertexAttribArray(pd.locals.a.objectId);
     gl.enableVertexAttribArray(pd.locals.a.isLightSource);
+    gl.enableVertexAttribArray(pd.locals.a.rotation);
+    gl.enableVertexAttribArray(pd.locals.a.replaceColor);
 
     gl.bindVertexArray(null);
 

@@ -22,7 +22,10 @@
             },
             "tabs": [],
             "content": [],
-            "onLoad": ""
+            "onLoad": "",
+            "itemTemplate": { 
+                
+            }
         }
     ],
     "default": [

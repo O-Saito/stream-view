@@ -4,11 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editor</title>
+    <title>Stream Editor</title>
     <style>
         @font-face {
             font-family: 'customFont';
-            src: url('/stream-view/Kingthings_Exeter.ttf');
+            src: url('/Kingthings_Exeter.ttf');
         }
 
         body {
@@ -154,7 +154,6 @@
                     <option value="prop">Prop</option>
                     <option value="char">Char</option>
                 </select>
-                <label id="lblPicking"></label>
             </div>
         </div>
     </div>
@@ -192,15 +191,15 @@
     <script src="https://webgl2fundamentals.org/webgl/resources/m4.js"></script>
 
     <script type="module">
-        import engine from '/stream-view/js/dsv/engine.js';
-        import game from '/stream-view/js/dsv/game.js';
-        import { atlases, charDefinitions, propsDefinition, createAllAtlas } from '/stream-view/js/dsv/atlasManager.js';
-        import drawer from '/stream-view/js/dsv/drawers.js';
-        import propConstruct from '/stream-view/js/dsv/propConstruct.js';
-        import Character from '/stream-view/js/dsv/elements/character.js';
-        import charAnimations from '/stream-view/js/dsv/animations/charAnimation.js';
-        import editor from '/stream-view/js/dsv/editor.js';
-        import raw from '/stream-view/js/dsv/shader/raw.js';
+        import engine from '/js/dsv/engine.js';
+        import game from '/js/dsv/game.js';
+        import { atlases, charDefinitions, propsDefinition, createAllAtlas } from '/js/dsv/atlasManager.js';
+        import drawer from '/js/dsv/drawers.js';
+        import propConstruct from '/js/dsv/propConstruct.js';
+        import Character from '/js/dsv/elements/character.js';
+        import charAnimations from '/js/dsv/animations/charAnimation.js';
+        import editor from '/js/dsv/editor.js';
+        import raw from '/js/dsv/shader/raw.js';
 
         const params = new URLSearchParams(window.location.search);
         document.getElementById('lbl-user-id').innerHTML = params.get('viewer');
@@ -216,24 +215,27 @@
         const gl = engine.gl;
         const programData = engine.programData;
 
-        const createChar = (userData) => {
-            const char = new Character({ position: { x: 400, y: 40 }, userData, spawnType: Character.spawnType.portal });
+        const createChar = (userData, spawn) => {
+            if (!spawn) spawn = Character.spawnType.portal;
+            if (spawn == 'point') spawn = Character.spawnType.position;
+            const char = new Character({ position: { x: 400, y: 40 }, userData, spawnType: spawn });
         }
 
         window.t = {
             showDebug: true,
+            game: game,
             engine: engine,
             atlases: atlases,
+            programData: programData,
+            propConstruct: propConstruct,
+            charDefinitions: charDefinitions,
+            propsDefinition: propsDefinition,
             chars: () => game.getCharList(),
             props: () => game.getPropList(),
             dyprops: () => game.getDyPropList(),
-            game: game,
-            programData: programData,
             globalLight: engine.globalLight,
-            createChar: createChar,
             createProp: propConstruct.createProp,
-            charDefinitions: charDefinitions,
-            propsDefinition: propsDefinition,
+            createChar: createChar,
             spawnEmote: (e) => {
                 let t = '';
                 let childrens = [];
@@ -279,13 +281,35 @@
                 lightDrawer,
             } = a;
 
-            console.log(engine.addLight({ pos: { x: 200, y: canvas.height / 2, z: 1 }, color: { r: 1, g: 0, b: 0, a: 1 }, intensity: 1.0,radius: 300.0 }));
+            console.log(canvas.height / 2);
+            console.log(engine.addLight({ pos: { x: 200, y: canvas.height / 2, z: 1 }, color: { r: 1, g: 0, b: 0, a: 1 }, intensity: 1.0, radius: 300.0 }));
 
             setTimeout(() => {
+                createChar({
+                    "userId": "145590747",
+                    "username": "scavote",
+                    "name": "scavote",
+                    "isMod": true,
+                    "isCitizen": true,
+                    "isOnWorld": true,
+                    "isDead": null,
+                    "preset": {
+                        "helmet": "/char/props/helmet/coroa.png",
+                        "capeFront": "/char/props-especial/cape/cape_front.png",
+                        "capeBack": "/char/props-especial/cape/cape_back.png",
+                        "face": "/char/props-especial/face/moustache.png",
+                        "head": "/char/body/skeleton/head",
+                        "body": "/char/body/skeleton/body",
+                        "legs": "/char/body/skeleton/legs",
+                        "weapon": "/char/props/equip/espada",
+                        "second_weapon": "/char/props/equip/escudo_madeira"
+                    }
+                }, 'point');
+                createChar();
                 createChar();
             }, 1000);
-            
-            const c = await loadJSON('/stream-view/js/dsv/cenario/01.json');
+
+            const c = await loadJSON('/js/dsv/cenario/01.json');
             //const c = await loadJSON('/js/dsv/cenario/stream.json');
             propConstruct.loadByList(c.props);
 
@@ -355,6 +379,7 @@
                 // END CENARIO FBO
 
                 lightFBO.clearAndListen();
+                gl.enable(gl.BLEND);
                 gl.blendFunc(gl.ONE, gl.ONE);
                 gl.useProgram(programData['light'].program);
                 gl.activeTexture(gl.TEXTURE0 + propCenarioFBO.normalIndex);
@@ -367,9 +392,10 @@
                 gl.bufferData(gl.ARRAY_BUFFER, programData['light'].transformData, gl.DYNAMIC_DRAW);
                 // gl.bindBuffer(gl.ARRAY_BUFFER, programData['light'].transformBuffer);
                 // gl.bufferData(gl.ARRAY_BUFFER, 0, programData['light'].transformData);
-                gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, 1);
+                gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, engine.getLightCount());
                 gl.bindVertexArray(null);
                 lightFBO.unbind();
+                gl.disable(gl.BLEND);
                 gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
                 // RIO FBO

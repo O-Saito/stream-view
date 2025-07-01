@@ -5,13 +5,13 @@ function setPropByData(p, d) {
 }
 
 export default class SimpleDraw {
-    constructor(parent, texture, onAnimationDone) {
+    constructor(parent, texture, onAnimationDone, { frameDelay = 0 } = {}) {
         this.parent = parent;
 
         this.onAnimationDone = onAnimationDone;
         this.stopAnimation = false;
         this.frameDirection = 1;
-        this.frameDelay = 0;
+        this.frameDelay = frameDelay;
         this.reset();
 
         this.changeTexture(texture);

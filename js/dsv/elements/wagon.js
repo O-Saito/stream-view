@@ -93,6 +93,7 @@ export default class Wagon extends Prop {
                                 onDoneMoving: () => {
                                     e.status = SpawnManager.Status.ended;
                                     c.position.y = floor.position.y + floor.objectSize.height;
+                                    char.doneSpawning();
                                     onDone();
                                 }
                             });
@@ -121,7 +122,6 @@ export default class Wagon extends Prop {
     update() {
         super.update();
 
-        console.log(Wagon.spawnManager.hasSomethingToSpawn());
         //const somethingToDespawn = Wagon.spawnManager.hasSomethingToDespawn(this);
         if (Wagon.spawnManager.hasSomethingToSpawn() && !this.onTheSpot) this.enter();
         if (!Wagon.spawnManager.hasSomethingToSpawn() && this.onTheSpot) this.exit();
