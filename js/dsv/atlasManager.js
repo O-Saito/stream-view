@@ -306,7 +306,7 @@ export const createPropsSpriteAtlas = async () => {
     let currentWidth = 0;
     for (let i = 0; i < data.size; i++) {
         const img = imgs[i];
-        const src = img.src.replace(location.origin, '');
+        const src = img.src.replace(`${location.origin}/stream-view`, '');
         if (data.srcs[src]) continue;
 
         if (currentHeight + img.height > data.maxHeight.size) {
@@ -316,14 +316,14 @@ export const createPropsSpriteAtlas = async () => {
             let nImg = null;
             for (let y = 0; y < reordered.length; y++) {
                 const r = reordered[y];
-                const nSrc = r.src.replace(location.origin, '');
+                const nSrc = r.src.replace(`${location.origin}/stream-view`, '');
                 if (data.srcs[nSrc] || r.height > heightEnabled) continue;
                 nImg = r;
                 break;
             }
             // const nImg = reordered.find(x => x.height <= heightEnabled);
             if (nImg) {
-                drawSpriteAt(nImg, { src: nImg.src.replace(location.origin, ''), index: propsDefinition.size, offset: { w: 0, h: currentHeight } });
+                drawSpriteAt(nImg, { src: nImg.src.replace(`${location.origin}/stream-view`, ''), index: propsDefinition.size, offset: { w: 0, h: currentHeight } });
             }
 
             currentHeight = 0;
@@ -409,7 +409,7 @@ export const createBackgroundAtlas = async () => {
     //let offset = 0;
     let currentHeight = 0;
     for (let i = 0; i < data.size; i++) {
-        const img = imgs.find(x => x.src.replace(location.origin, '') == order[i]);
+        const img = imgs.find(x => x.src.replace(`${location.origin}/stream-view`, '') == order[i]);
         ctx.drawImage(img, 0, currentHeight);
         currentHeight += data.maxHeight.size;
     }
