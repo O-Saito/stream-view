@@ -10,9 +10,9 @@ function createAudio(audioName, audioSrc) {
     return audio;
 }
 
-createAudio("pei2", "/audios/pei2.mp3");
-createAudio("follow", "/audios/umfollow.wav");
-createAudio("invasion", "/audios/invasion.mp3");
+createAudio("pei2", "/stream-view/audios/pei2.mp3");
+createAudio("follow", "/stream-view/audios/umfollow.wav");
+createAudio("invasion", "/stream-view/audios/invasion.mp3");
 
 const audioContext = new AudioContext();
 
