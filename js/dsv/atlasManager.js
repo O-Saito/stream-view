@@ -276,7 +276,7 @@ export const createPropsSpriteAtlas = async () => {
     ]);
 
     const reordered = imgs.sort((a, b) => b.height - a.height);
-    const numOfLayers = Math.ceil(reordered.map(x => x.height).reduce((a, b) => a + b) / data.maxHeight.size) ;
+    const numOfLayers = Math.ceil(reordered.map(x => x.height).reduce((a, b) => a + b) / data.maxHeight.size) + 1 ;
 
     const [c, ctx] = createOffscreenCanvas(data.maxWidth.size, data.maxHeight.size * numOfLayers);
     const [cNormal, ctxNormal] = createOffscreenCanvas(data.maxWidth.size, data.maxHeight.size * numOfLayers);
