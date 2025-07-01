@@ -241,7 +241,7 @@ export const createPropsSpriteAtlas = async () => {
                     resolve(image);
                 }
 
-                imageNormal.src = srcNormal;
+                imageNormal.src = `/stream-view${srcNormal}`;
             }
 
             image.src = `/stream-view${src}`;
