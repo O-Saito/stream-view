@@ -25,7 +25,7 @@ export const dynamicPropDefinition = {
 }
 
 function fixOrigin(src) {
-    if (typeof src == 'string') return `${src}/stream-view`;
+    if (typeof src == 'string') return `/stream-view${src}`;
     return src.src.replace(`${location.origin}/stream-view`, '');
 }
 
