@@ -91,7 +91,7 @@ export const createCharSpriteAtlas = async () => {
         fixI++;
         let currentWidth = img.width;
         draw(img, fixI, 0, normal);
-        imgs[fixI] = null;
+        imgs[i] = null;
         while (currentWidth <= tmpC.width) {
             const freeWidth = tmpC.width - currentWidth;
             if (freeWidth == 0) break;
