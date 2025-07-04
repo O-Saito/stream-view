@@ -464,7 +464,7 @@ const charAnimations = {
                 ],
             },
             'jump': {
-                isNotSpriteAnimated: true,
+                isNotSpriteAnimated: false,
                 frameCount: 2,
                 frames: [
                     { ax: 0, ay: 5 },
