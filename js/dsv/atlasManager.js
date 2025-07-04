@@ -24,6 +24,11 @@ export const dynamicPropDefinition = {
     calcDepth: (src) => { return calcDepth(dynamicPropDefinition, src); }
 }
 
+function fixOrigin(src) {
+  if (typeof src == 'string') return src;
+  return src.src.replace(location.origin, '');
+}
+
 function createOffscreenCanvas(width, height, options) {
     if (!options) options = {};
     if (options.alpha == null || options.alpha == undefined) options.alpha = true;
