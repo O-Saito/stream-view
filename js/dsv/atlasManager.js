@@ -25,8 +25,8 @@ export const dynamicPropDefinition = {
 }
 
 function fixOrigin(src) {
-  if (typeof src == 'string') return src;
-  return src.src.replace(location.origin, '');
+  if (typeof src == 'string') return `${src}/stream-view`;
+  return src.src.replace(`${location.origin}/stream-view`, '');
 }
 
 function createOffscreenCanvas(width, height, options) {
