@@ -77,7 +77,7 @@ export const createCharSpriteAtlas = async () => {
     const [tmpCNormal, tmpCtxNormal] = createOffscreenCanvas(maxWidth, heightOfImage * imgs.length);
 
     const draw = (img, index, x, normal = null) => {
-        charDefinitions.srcs[fixOrigin(img)] = { i: index, o: 0, w: x };
+        charDefinitions.srcs[fixOrigin(img)] = { i: index, o: 0, w: tmpC.width - x };
         tmpCtx.drawImage(img, x, index * heightOfImage);
         if (normal) tmpCtxNormal.drawImage(normal, x, index * heightOfImage);
     };
