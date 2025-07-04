@@ -25,8 +25,8 @@ export const dynamicPropDefinition = {
 }
 
 function fixOrigin(src) {
-  if (typeof src == 'string') return `${src}/stream-view`;
-  return src.src.replace(`${location.origin}/stream-view`, '');
+    if (typeof src == 'string') return `${src}/stream-view`;
+    return src.src.replace(`${location.origin}/stream-view`, '');
 }
 
 function createOffscreenCanvas(width, height, options) {
@@ -39,8 +39,10 @@ function createOffscreenCanvas(width, height, options) {
     ctx.clearRect(0, 0, c.width, c.height);
     ctx.fillStyle = "rgba(0, 0, 0, 0)";
     ctx.fillRect(0, 0, c.width, c.height);
-    ctx.translate(0, c.height);
-    ctx.scale(1, -1);
+    if (options.reverse) {
+        ctx.translate(0, c.height);
+        ctx.scale(1, -1);
+    }
     return [c, ctx];
 }
 
