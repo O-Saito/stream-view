@@ -32,6 +32,7 @@ function fixOrigin(src) {
 function createOffscreenCanvas(width, height, options) {
     if (!options) options = {};
     if (options.alpha == null || options.alpha == undefined) options.alpha = true;
+    if (options.reverse == undefined) options.reverse = true;
     const c = new OffscreenCanvas(width, height);
     const ctx = c.getContext("2d", options);
     if (options.notUseDefaultConfig) return [c, ctx];
