@@ -106,6 +106,7 @@ export const createCharSpriteAtlas = async () => {
     fixI++;
 
     const countOfLayers = fixI;
+    charDefinitions.size = fixI;
     const [c, ctx] = createOffscreenCanvas(maxWidth, heightOfImage * countOfLayers, { reverse: false });
     const [cNormal, ctxNormal] = createOffscreenCanvas(maxWidth, heightOfImage * countOfLayers);
 
