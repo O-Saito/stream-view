@@ -1,3 +1,5 @@
+import charSprites from './cenario/charSprites.json' with { type: "json" };
+
 const calcDepth = (def, src) => {
     return def.size - 1 - def.srcs[src]?.i ?? 0;
 }
@@ -42,145 +44,68 @@ export const createCharSpriteAtlas = async () => {
 
     const n = Date.now();
     const imgs = [];
-    const loadCharImage = (src, arrs) => {
+    const loadCharImage = (src) => {
         return new Promise((resolve) => {
             const image = new Image();
             image.onload = function () {
-                if (arrs.length > 1) {
-                    const i = arrs[0].indexOf(arrs[1]);
-                    charDefinitions.srcs[src] = { i: i == -1 ? arrs[0].length : i, o: arrs[1].length };
-
-                    arrs[1].push(image);
-                    if (arrs[1].length == 1) {
-                        arrs[0].push(arrs[1]);
-                        charDefinitions.size++;
-                    }
-
-                    resolve(image);
-                    return;
-                }
-
-                charDefinitions.srcs[src] = { i: arrs[0].length, o: undefined };
-                arrs[0].push(image);
-                charDefinitions.size++;
-
+                imgs.push(image);
                 resolve(image);
             }
-            image.src = `/stream-view${src}`;
+            image.src = fixOrigin(src);
         });
     };
+    const promises = [];
 
-
-    const props1 = [];
-
-    await Promise.all([
-        // Skeleton
-        loadCharImage('/char/body/skeleton/head/default.png', [imgs]),
-        loadCharImage('/char/body/skeleton/head/attack.png', [imgs]),
-        loadCharImage('/char/body/skeleton/head/attackbow.png', [imgs]),
-        loadCharImage('/char/body/skeleton/head/jump.png', [imgs]),
-        loadCharImage('/char/body/skeleton/head/def.png', [imgs]),
-        loadCharImage('/char/body/skeleton/head/bran.png', [imgs]),
-        
-        loadCharImage('/char/body/skeleton/body/default.png', [imgs]),
-        loadCharImage('/char/body/skeleton/body/jump.png', [imgs]),
-        loadCharImage('/char/body/skeleton/body/attack.png', [imgs]),
-        loadCharImage('/char/body/skeleton/body/attackbow.png', [imgs]),
-        loadCharImage('/char/body/skeleton/body/def.png', [imgs]),
-        loadCharImage('/char/body/skeleton/body/bran.png', [imgs]),
-
-        loadCharImage('/char/body/skeleton/legs/default.png', [imgs]),
-        loadCharImage('/char/body/skeleton/legs/attack.png', [imgs]),
-        loadCharImage('/char/body/skeleton/legs/attackbow.png', [imgs]),
-        loadCharImage('/char/body/skeleton/legs/jump.png', [imgs]),
-        loadCharImage('/char/body/skeleton/legs/def.png', [imgs]),
-        loadCharImage('/char/body/skeleton/legs/bran.png', [imgs]),
-        // End Skeleton
-        
-        // Human
-        loadCharImage('/char/body/human/head/default.png', [imgs]),
-        //loadCharImage('/char/body/human/head/attack.png', [imgs]),
-        //loadCharImage('/char/body/human/head/attackbow.png', [imgs]),
-        //loadCharImage('/char/body/human/head/jump.png', [imgs]),
-        //loadCharImage('/char/body/human/head/def.png', [imgs]),
-        //loadCharImage('/char/body/human/head/bran.png', [imgs]),
-        
-        loadCharImage('/char/body/human/body/default.png', [imgs]),
-        //loadCharImage('/char/body/human/body/jump.png', [imgs]),
-        //loadCharImage('/char/body/human/body/attack.png', [imgs]),
-        //loadCharImage('/char/body/human/body/attackbow.png', [imgs]),
-        //loadCharImage('/char/body/human/body/def.png', [imgs]),
-        //loadCharImage('/char/body/human/body/bran.png', [imgs]),
-
-        loadCharImage('/char/body/human/legs/default.png', [imgs]),
-        //loadCharImage('/char/body/human/legs/attack.png', [imgs]),
-        //loadCharImage('/char/body/human/legs/attackbow.png', [imgs]),
-        //loadCharImage('/char/body/human/legs/jump.png', [imgs]),
-        //loadCharImage('/char/body/human/legs/def.png', [imgs]),
-        //loadCharImage('/char/body/human/legs/bran.png', [imgs]),
-        // End Human
-
-        // Espada default
-        loadCharImage('/char/props/equip/espada/default.png', [imgs]),
-        loadCharImage('/char/props/equip/espada/attack.png', [imgs]),
-        loadCharImage('/char/props/equip/espada/jump.png', [imgs]),
-        loadCharImage('/char/props/equip/espada/def.png', [imgs]),
-        loadCharImage('/char/props/equip/espada/drop.png', [imgs]),
-        // End Espada default
-
-        // Escudo default
-        loadCharImage('/char/props/equip/escudo_madeira/default.png', [imgs]),
-        loadCharImage('/char/props/equip/escudo_madeira/attack.png', [imgs]),
-        loadCharImage('/char/props/equip/escudo_madeira/jump.png', [imgs]),
-        loadCharImage('/char/props/equip/escudo_madeira/def.png', [imgs]),
-        loadCharImage('/char/props/equip/escudo_madeira/drop.png', [imgs]),
-        // End Escudo default
-
-        // Arco default
-        loadCharImage('/char/props/equip/arco/default.png', [imgs]),
-        // End Arco default
-
-        // Props default
-        loadCharImage('/char/props/helmet/blackpower.png', [imgs, props1]),
-        loadCharImage('/char/props/helmet/bruxo.png', [imgs, props1]),
-        loadCharImage('/char/props/helmet/coroa.png', [imgs, props1]),
-        loadCharImage('/char/props/helmet/mugi.png', [imgs, props1]),
-        loadCharImage('/char/props/helmet/sjins.png', [imgs, props1]),
-        loadCharImage('/char/props/helmet/ninja.png', [imgs, props1]),
-        // End Props default
-
-        // Props Chest Leather
-        loadCharImage('/char/props/chest/leather/default.png', [imgs]),
-        loadCharImage('/char/props/pants/leather/default.png', [imgs]),
-
-        // End Props Chest Leather
-
-        // Props Especial
-        loadCharImage('/char/props-especial/face/moustache.png', [imgs]),
-        loadCharImage('/char/props-especial/cape/cape_front.png', [imgs]),
-        loadCharImage('/char/props-especial/cape/cape_back.png', [imgs]),
-    ]);
-
-    let width = imgs[1].width + 64;
-    const countOfLayers = imgs.length;
-
-    const [c, ctx] = createOffscreenCanvas(width, heightOfImage * countOfLayers);
-    const [cNormal, ctxNormal] = createOffscreenCanvas(width, heightOfImage * countOfLayers);
-
-    for (let i = 0; i < imgs.length; i++) {
-        const img = imgs[i];
-        if (Array.isArray(img)) {
-            for (let x = 0; x < img.length; x++) {
-                const image = img[x];
-                ctx.drawImage(image, x * heightOfImage, i * heightOfImage);
-            }
-            continue;
-        }
-        ctx.drawImage(img, 0, i * heightOfImage);
+    for (let i = 0; i < charSprites.length; i++) {
+        const sprite = charSprites[i];
+        promises.push(loadCharImage(sprite));
     }
 
-    const imageData = ctx.getImageData(0, 0, width, heightOfImage * countOfLayers).data;
-    const imageDataNormal = ctxNormal.getImageData(0, 0, width, heightOfImage * countOfLayers).data;
+    await Promise.all(promises);
+
+    const maxWidth = Math.max(...imgs.map(x => x.width));
+
+    const [tmpC, tmpCtx] = createOffscreenCanvas(maxWidth, heightOfImage * imgs.length);
+    const [tmpCNormal, tmpCtxNormal] = createOffscreenCanvas(maxWidth, heightOfImage * imgs.length);
+
+    const draw = (img, index, x, normal = null) => {
+        charDefinitions.srcs[fixOrigin(img)] = { i: index, o: 0, w: x };
+        tmpCtx.drawImage(img, x, index * heightOfImage);
+        if (normal) tmpCtxNormal.drawImage(normal, x, index * heightOfImage);
+    };
+
+    imgs.sort((a, b) => b.width - a.width);
+
+    let fixI = 0;
+    for (let i = 0; i < imgs.length; i++) {
+        const { img, normal } = Array.isArray(imgs[i]) ? { img: imgs[i][0], normal: imgs[i][1] } : { img: imgs[i], normal: null };
+        if (img == null) continue;
+        fixI++;
+        let currentWidth = img.width;
+        draw(img, fixI, 0, normal);
+        imgs[fixI] = null;
+        while (currentWidth <= tmpC.width) {
+            const freeWidth = tmpC.width - currentWidth;
+            if (freeWidth == 0) break;
+            const newImg = imgs.find(x => x != null && x.width <= freeWidth);
+            if (newImg == undefined || newImg == null) break;
+            draw(newImg, fixI, currentWidth, normal);
+            currentWidth += newImg.width;
+            imgs[imgs.indexOf(newImg)] = null;
+            break;
+        }
+    }
+    fixI++;
+
+    const countOfLayers = fixI;
+    const [c, ctx] = createOffscreenCanvas(maxWidth, heightOfImage * countOfLayers, { reverse: false });
+    const [cNormal, ctxNormal] = createOffscreenCanvas(maxWidth, heightOfImage * countOfLayers);
+
+    ctx.drawImage(tmpC, 0, tmpC.height - c.height, tmpC.width, tmpC.height, 0, 0, c.width, tmpC.height);
+    ctxNormal.drawImage(tmpCNormal, 0, tmpC.height - c.height, tmpC.width, tmpC.height, 0, 0, c.width, tmpC.height);
+
+    const imageData = ctx.getImageData(0, 0, maxWidth, heightOfImage * countOfLayers).data;
+    const imageDataNormal = ctxNormal.getImageData(0, 0, maxWidth, heightOfImage * countOfLayers).data;
 
     console.log('createCharSpriteAtlas', Date.now() - n);
 
@@ -276,7 +201,7 @@ export const createPropsSpriteAtlas = async () => {
     ]);
 
     const reordered = imgs.sort((a, b) => b.height - a.height);
-    const numOfLayers = Math.ceil(reordered.map(x => x.height).reduce((a, b) => a + b) / data.maxHeight.size) + 1 ;
+    const numOfLayers = Math.ceil(reordered.map(x => x.height).reduce((a, b) => a + b) / data.maxHeight.size) + 1;
 
     const [c, ctx] = createOffscreenCanvas(data.maxWidth.size, data.maxHeight.size * numOfLayers);
     const [cNormal, ctxNormal] = createOffscreenCanvas(data.maxWidth.size, data.maxHeight.size * numOfLayers);
@@ -390,7 +315,7 @@ export const createBackgroundAtlas = async () => {
                 resolve(image);
             }
 
-            image.src =`/stream-view${src}`;
+            image.src = `/stream-view${src}`;
         });
     };
 
@@ -450,10 +375,10 @@ export const createDynamictPropSpriteAtlas = async () => {
     }
 
     const draw = (image, normal) => {
-        const src=  image.src.replace(`${location.origin}/stream-view`, '');
+        const src = image.src.replace(`${location.origin}/stream-view`, '');
         if (dynamicPropDefinition.srcs[src]) return;
         ctx.drawImage(image, data.lastOffset.width, data.lastOffset.height);
-        if(normal) ctxNormal.drawImage(normal, data.lastOffset.width, data.lastOffset.height);
+        if (normal) ctxNormal.drawImage(normal, data.lastOffset.width, data.lastOffset.height);
         dynamicPropDefinition.srcs[src] = {
             i: 1,
             ow: data.lastOffset.width,
