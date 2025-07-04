@@ -29,6 +29,32 @@ function fixOrigin(src) {
     return src.src.replace(`${location.origin}/stream-view`, '');
 }
 
+function returnWhenLoadedImage(src) {
+    return new Promise((resolve) => {
+        const image = new Image();
+        image.onload = function () { resolve(image); }
+        image.src = fixOrigin(src);
+    });
+}
+
+function loadImage(data, arr) {
+    const { src, srcNormal } = Array.isArray(data) ? { src: data[0], srcNormal: data[1] } : { src: data, srcNormal: undefined };
+    return new Promise((resolve) => {
+        returnWhenLoadedImage(src).then(img => {
+            if (srcNormal) {
+                returnWhenLoadedImage(srcNormal).then(imgNormal => {
+                    arr.push([img, imgNormal]);
+                    resolve([img, imgNormal]);
+                });
+                return;
+            }
+            arr.push(img);
+            resolve(img);
+        });
+    });
+}
+
+
 function createOffscreenCanvas(width, height, options) {
     if (!options) options = {};
     if (options.alpha == null || options.alpha == undefined) options.alpha = true;
@@ -52,21 +78,11 @@ export const createCharSpriteAtlas = async () => {
 
     const n = Date.now();
     const imgs = [];
-    const loadCharImage = (src) => {
-        return new Promise((resolve) => {
-            const image = new Image();
-            image.onload = function () {
-                imgs.push(image);
-                resolve(image);
-            }
-            image.src = fixOrigin(src);
-        });
-    };
     const promises = [];
 
     for (let i = 0; i < charSprites.length; i++) {
         const sprite = charSprites[i];
-        promises.push(loadCharImage(sprite));
+        promises.push(loadImage(sprite, imgs));
     }
 
     await Promise.all(promises);
@@ -84,7 +100,7 @@ export const createCharSpriteAtlas = async () => {
 
     imgs.sort((a, b) => b.width - a.width);
 
-    let fixI = 0;
+    let fixI = -1;
     for (let i = 0; i < imgs.length; i++) {
         const { img, normal } = Array.isArray(imgs[i]) ? { img: imgs[i][0], normal: imgs[i][1] } : { img: imgs[i], normal: null };
         if (img == null) continue;
@@ -95,12 +111,12 @@ export const createCharSpriteAtlas = async () => {
         while (currentWidth <= tmpC.width) {
             const freeWidth = tmpC.width - currentWidth;
             if (freeWidth == 0) break;
-            const newImg = imgs.find(x => x != null && x.width <= freeWidth);
-            if (newImg == undefined || newImg == null) break;
+            const n = imgs.find(x => x != null && x.width <= freeWidth);
+            if (n == undefined || n == null) break;
+            const { newImg, newNormal } = Array.isArray(n) ? { newImg: n[0], newNormal: n[1] } : { newImg: n, newNormal: null };
             draw(newImg, fixI, currentWidth, normal);
             currentWidth += newImg.width;
             imgs[imgs.indexOf(newImg)] = null;
-            break;
         }
     }
     fixI++;
