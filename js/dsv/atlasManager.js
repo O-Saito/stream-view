@@ -1,4 +1,5 @@
 import charSprites from './cenario/charSprites.json' with { type: "json" };
+import propsSprites from './cenario/propsSprites.json' with { type: "json" };
 
 const calcDepth = (def, src) => {
     return def.size - 1 - def.srcs[src]?.i ?? 0;
@@ -156,146 +157,130 @@ export const createPropsSpriteAtlas = async () => {
         srcs: {},
         size: 0,
     };
-    const imgsNormal = {};
     const imgs = [];
-    const loadPropsImage = (src, srcNormal) => {
-        return new Promise((resolve) => {
-            let ok = false;
-            const image = new Image();
-            image.onload = function () {
-                if (image.width > data.maxWidth.size) {
-                    data.maxWidth.src = src;
-                    data.maxWidth.size = image.width;
-                }
-                if (image.height > data.maxHeight.size) {
-                    data.maxHeight.src = src;
-                    data.maxHeight.size = image.height;
-                }
-                data.size++;
-                imgs.push(image);
-                if (srcNormal && !ok) {
-                    ok = true;
-                    return;
-                }
-                resolve(image);
-            }
 
-            if (srcNormal) {
-                const imageNormal = new Image();
-                imageNormal.onload = function () {
-                    imgsNormal[src] = imageNormal;
-                    if (!ok) {
-                        ok = true;
-                        return;
-                    }
-                    resolve(image);
-                }
+    const promises = [];
+    for (let i = 0; i < propsSprites.length; i++) {
+        const sprite = propsSprites[i];
+        promises.push(loadImage(sprite, imgs));
+    }
+    await Promise.all(promises);
 
-                imageNormal.src = `/stream-view${srcNormal}`;
-            }
-
-            image.src = `/stream-view${src}`;
-        });
-    };
-
-    await Promise.all([
-        loadPropsImage('/world/props/casa.png'),
-        loadPropsImage('/world/props/bonfas.png'),
-        loadPropsImage('/world/natural/arvore.png'),
-        loadPropsImage('/world/natural/chao.png'),
-        loadPropsImage('/world/natural/chao2.png'),
-        loadPropsImage('/world/natural/grama.png'),
-        loadPropsImage('/world/natural/moita.png'),
-        loadPropsImage('/world/natural/moita2.png'),
-        loadPropsImage('/world/natural/nuvem.png'),
-        loadPropsImage('/world/props/carroca.png', '/world/props/carroca-normal.png'),
-        //loadPropsImage('/teste2.png', '/teste2-normalmap.png'),
-        //loadPropsImage('/Atlas_new_parado.png'),
-        //loadPropsImage('/Atlas_new_Braco_aberto.png'),
-        loadPropsImage('/portal/portal-atlas.png'),
-        loadPropsImage('/portal/portal-abrindo-sheet.png'),
-        //loadPropsImage('/quadrado-normal.png', '/quadrado-normal.png'),
-        //loadPropsImage('/teste.png', '/teste-normalmap.png'),
-        //loadPropsImage('/Rodas_carroca.png'),
-        //loadPropsImage('/Rodas_carroca.png'),
-        loadPropsImage('/world/atk/flecha.png'),
-        loadPropsImage('/world/effect/exhaust.png'),
-        //loadPropsImage('/cone-normal.png', '/cone-normal.png'),
-        //loadPropsImage('/circulo-normal.png', '/circulo-normal.png'),
-        //loadPropsImage('/dunnot-normal.png', '/dunnot-normal.png'),
-    ]);
-
-    const reordered = imgs.sort((a, b) => b.height - a.height);
-    const numOfLayers = Math.ceil(reordered.map(x => x.height).reduce((a, b) => a + b) / data.maxHeight.size) + 1;
-
-    const [c, ctx] = createOffscreenCanvas(data.maxWidth.size, data.maxHeight.size * numOfLayers);
-    const [cNormal, ctxNormal] = createOffscreenCanvas(data.maxWidth.size, data.maxHeight.size * numOfLayers);
-
-    const drawSpriteAt = (img, { src, index, offset }) => {
-
-        if (!offset.w) offset.w = 0;
-        if (!offset.h) offset.h = 0;
-
-        if (imgsNormal[src]) {
-            ctxNormal.drawImage(imgsNormal[src], 0, (index * data.maxHeight.size) + offset.h);
+    imgs.sort((a, b) => {
+        const currentA = Array.isArray(a) ? a[0] : a;
+        const currentB = Array.isArray(b) ? b[0] : b;
+        if (currentA.width > data.maxWidth.size) {
+            data.maxWidth.src = fixOrigin(currentA);
+            data.maxWidth.size = currentA.width;
         }
+        if (currentA.height > data.maxHeight.size) {
+            data.maxHeight.src = fixOrigin(currentA);
+            data.maxHeight.size = currentA.height;
+        }
+        if (currentB.width > data.maxWidth.size) {
+            data.maxWidth.src = fixOrigin(currentB);
+            data.maxWidth.size = currentB.width;
+        }
+        if (currentB.height > data.maxHeight.size) {
+            data.maxHeight.src = fixOrigin(currentB);
+            data.maxHeight.size = currentB.height;
+        }
+        if (currentB.width == currentA.width) return currentB.height - currentA.height;
+        return currentB.width - currentA.width;
+    });
 
-        ctx.drawImage(img, 0, (index * data.maxHeight.size) + offset.h);
-        data.srcs[src] = src;
-        propsDefinition.srcs[src] = {
+    const [tmpC, tmpCtx] = createOffscreenCanvas(data.maxWidth.size, data.maxHeight.size * imgs.length);
+    const [tmpCNormal, tmpCtxNormal] = createOffscreenCanvas(data.maxWidth.size, data.maxHeight.size * imgs.length);
+
+    const draw = ({ img, index, xOffset, yOffset, normal = null, maxWidth = null, maxHeight = null, innerIndex = 0 }) => {
+        propsDefinition.srcs[fixOrigin(img)] = {
             i: index,
-            ow: offset.w,
-            oh: data.maxHeight.size - (img.height + offset.h),
+            ow: xOffset,
+            oh: data.maxHeight.size - (img.height + yOffset),
             w: img.width,
             h: img.height,
         };
+        data.srcs[fixOrigin(img)] = fixOrigin(img);
+        tmpCtx.drawImage(img, xOffset, yOffset + (index * data.maxHeight.size));
+        if (normal) tmpCtxNormal.drawImage(normal, xOffset, yOffset + (index * data.maxHeight.size));
+        imgs[normal ? imgs.indexOf(imgs.find(x => Array.isArray(x) && x[0] == img)) : imgs.indexOf(img)] = null;
+
+        const freeWidth = maxWidth == null ? data.maxWidth.size - (xOffset + img.width) : maxWidth;
+        const freeHeight = maxHeight == null ? data.maxHeight.size - currentHeight : maxHeight;
+        console.log(innerIndex, index, img.src, { freeWidth, freeHeight }, { width: img.width, height: img.height });
+
+        if (img.src == 'http://localhost:1601/teste.png') {
+            drawCanvasForDebug(tmpC); console.log('here');
+        }
+        if (freeWidth > 0) {
+            let n = imgs.find(x => { const a = x && Array.isArray(x) ? x[0] : x; return a != null && a.width <= freeWidth && a.height <= freeHeight; });
+            if (n == undefined || n == null) return;
+            const { newImg, newNormal } = Array.isArray(n) ? { newImg: n[0], newNormal: n[1] } : { newImg: n, newNormal: null };
+            draw({ img: newImg, index, xOffset: xOffset + img.width, yOffset, normal: newNormal, maxWidth: maxWidth - newImg.width, innerIndex: innerIndex + 1 });
+            currentHeight += newImg.height;
+            if (!drawForHeight(newImg, xOffset + img.width)) currentHeight -= newImg.height;
+        }
+    };
+
+    const drawForHeight = (img, cutWidth) => {
+        let freeHeight = data.maxHeight.size - currentHeight;
+        let offset = currentHeight;
+        let hasDrawn = false;
+        while (freeHeight > 0) {
+            const n = imgs.find(x => { const a = x && Array.isArray(x) ? x[0] : x; return a != null && a.height <= freeHeight && a.width <= img.width; });
+            if (n == undefined || n == null) break;
+            const { newImg, newNormal } = Array.isArray(n) ? { newImg: n[0], newNormal: n[1] } : { newImg: n, newNormal: null };
+            //console.log('drawForHeight', { src: newImg.src , parent: img.src, currentHeight, maxHeight: data.maxHeight.size, freeHeight, validate: data.maxHeight.size - currentHeight > 0 });
+            draw({ img: newImg, index: fixI, xOffset: cutWidth - img.width, yOffset: offset, normal: newNormal, maxWidth: img.width - newImg.width, innerIndex: 99 });
+            currentHeight += newImg.height;
+            offset += newImg.height;
+            freeHeight -= newImg.height;
+            hasDrawn = true;
+        }
+        return hasDrawn;
     }
 
-    //let offset = 0;
     let currentHeight = 0;
     let currentWidth = 0;
-    for (let i = 0; i < data.size; i++) {
-        const img = imgs[i];
-        const src = img.src.replace(`${location.origin}/stream-view`, '');
-        if (data.srcs[src]) continue;
-
-        if (currentHeight + img.height > data.maxHeight.size) {
-            const heightEnabled = data.maxHeight.size - currentHeight;
-            //console.log(`heightEnabled`, heightEnabled);
-
-            let nImg = null;
-            for (let y = 0; y < reordered.length; y++) {
-                const r = reordered[y];
-                const nSrc = r.src.replace(`${location.origin}/stream-view`, '');
-                if (data.srcs[nSrc] || r.height > heightEnabled) continue;
-                nImg = r;
-                break;
-            }
-            // const nImg = reordered.find(x => x.height <= heightEnabled);
-            if (nImg) {
-                drawSpriteAt(nImg, { src: nImg.src.replace(`${location.origin}/stream-view`, ''), index: propsDefinition.size, offset: { w: 0, h: currentHeight } });
-            }
-
-            currentHeight = 0;
-            currentWidth = 0;
-            propsDefinition.size++;
-        }
-        drawSpriteAt(img, { src: src, index: propsDefinition.size, offset: { w: currentWidth, h: currentHeight } });
-        currentHeight += img.height;
-        //currentWidth += img.width;
+    //let offset = 0;
+    let fixI = -1;
+    for (let i = 0; i < imgs.length; i++) {
+        if (imgs[i] == null) continue;
+        const { img, normal } = Array.isArray(imgs[i]) ? { img: imgs[i][0], normal: imgs[i][1] } : { img: imgs[i], normal: null };
+        if (img == null) continue;
+        fixI++;
+        tmpCtx.beginPath(); // Start a new path
+        tmpCtx.moveTo(0, fixI * data.maxHeight.size); // Move the pen to (30, 50)
+        tmpCtx.lineTo(data.maxWidth.size, fixI * data.maxHeight.size); // Draw a line to (150, 100)
+        tmpCtx.strokeStyle = "black";
+        tmpCtx.stroke(); // Render the path
+        currentHeight = img.height;
+        currentWidth = img.width;
+        imgs[normal ? imgs.indexOf(imgs.find(x => Array.isArray(x) && x[0] == img)) : imgs.indexOf(img)] = null;
+        drawForHeight(img, currentWidth);
+        currentHeight = img.height;
+        draw({ img, index: fixI, xOffset: 0, yOffset: 0, normal, maxWidth: data.maxWidth.size - img.width, maxHeight: data.maxHeight.size });
     }
-    propsDefinition.size = numOfLayers;
+    fixI++;
 
-    const imageData = ctx.getImageData(0, 0, data.maxWidth.size, data.maxHeight.size * numOfLayers).data;
-    const imageDataNormal = ctxNormal.getImageData(0, 0, data.maxWidth.size, data.maxHeight.size * numOfLayers).data;
+    const countOfLayers = fixI;
+    propsDefinition.size = countOfLayers;
+    const [c, ctx] = createOffscreenCanvas(data.maxWidth.size, data.maxHeight.size * countOfLayers, { reverse: false });
+    const [cNormal, ctxNormal] = createOffscreenCanvas(data.maxWidth.size, data.maxHeight.size * countOfLayers, { reverse: false });
 
-    console.log(data);
+    ctx.drawImage(tmpC, 0, tmpC.height - c.height, tmpC.width, tmpC.height, 0, 0, c.width, tmpC.height);
+    ctxNormal.drawImage(tmpCNormal, 0, tmpC.height - c.height, tmpC.width, tmpC.height, 0, 0, c.width, tmpC.height);
+
+    const imageData = ctx.getImageData(0, 0, data.maxWidth.size, data.maxHeight.size * countOfLayers).data;
+    const imageDataNormal = ctxNormal.getImageData(0, 0, data.maxWidth.size, data.maxHeight.size * countOfLayers).data;
+
     console.log('createPropsSpriteAtlas', Date.now() - n);
     atlases['world_prop'] = {
         canvas: c,
+        tmpCanvas: tmpC,
         ctx: ctx,
         imageHeight: data.maxHeight.size,
-        layersCount: numOfLayers,
+        layersCount: countOfLayers,
         imgData: imageData,
         normalCanvas: cNormal,
         normalCtx: ctxNormal,
