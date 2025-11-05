@@ -73,8 +73,8 @@ export const dynamicPropDefinition = {
  * @returns 
  */
 function fixOrigin(src) {
-    if (typeof src == 'string') return `/scaworld/sprites${src}`;
-    return src.src.replace(`${location.origin}/scaworld/sprites`, '');
+    if (typeof src == 'string') return `/stream-view/scaworld/sprites${src}`;
+    return src.src.replace(`${location.origin}/stream-view/scaworld/sprites`, '');
 }
 
 /**
@@ -496,4 +496,5 @@ export default {
     createAllAtlas,
     createCharSpriteAtlas,
     createPropsSpriteAtlas,
+
 };
