@@ -1,0 +1,301 @@
+<style>
+    @font-face {
+        font-family: 'customFont';
+        src: url('/Kingthings_Exeter.ttf');
+    }
+
+    * {
+        image-rendering: pixelated;
+        box-sizing: border-box;
+        margin: 0;
+    }
+
+    html,
+    body,
+    canvas {
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+        transform: scale(1) translateZ(0);
+        will-change: transform;
+        backface-visibility: hidden;
+        perspective: 1px;
+    }
+
+    canvas {
+        display: block;
+        image-rendering: pixelated !important;
+        /* Modern browsers */
+        image-rendering: crisp-edges;
+        /* Firefox */
+        image-rendering: -webkit-optimize-contrast;
+        /* Safari */
+        image-rendering: -moz-crisp-edges;
+        /* Firefox */
+        image-rendering: -o-crisp-edges;
+        /* Opera */
+        transform: translateZ(0);
+        /* Força o CEF a usar escala exata */
+        will-change: transform;
+        /* Otimização para CEF */
+    }
+
+    .html-main {
+        width: 100%;
+        height: 100%;
+    }
+
+    .html-canvas {
+        width: 100%;
+        height: 100%;
+    }
+
+    .layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    .element {
+        position: absolute;
+        background-size: 100% 100%;
+    }
+
+    .element.canvas {
+        width: 100%;
+        height: 100%;
+    }
+
+    .floor {
+        width: 100%;
+        height: 100%;
+        /*background-image: url(/chao.png);
+        background-size: auto 15px;
+        background-repeat: repeat-x;
+        background-position: right 145px;*/
+    }
+
+    .water {
+        width: 100%;
+        height: 100%;
+        top: 12px;
+        background-image: url(/agua/agua-parada.png);
+    }
+
+    .fps {
+        top: 0;
+        color: red;
+    }
+
+    .time {
+        top: 0;
+        left: 30px;
+        color: red;
+    }
+
+    .size {
+        top: 30px;
+        color: red;
+    }
+
+    #uiCanvas {
+        position: relative;
+    }
+</style>
+
+<div class="html-main" style="height: 200px;">
+    <div class="background-ambiente">
+        <div class="html-canvas layer" style="height: 200px;">
+            <div class="element floor" style="height: 200px;"></div>
+            <canvas id="gameCanvas" class="element canvas"></canvas>
+            <canvas id="uiCanvas" class="element canvas"></canvas>
+            <div class="element fps"></div>
+            <div class="element time"></div>
+            <div class="element size"></div>
+        </div>
+    </div>
+</div>
+
+<div>
+    <label><input id="chk-pause" type="checkbox" /> Pause</label>
+    <br/>
+    <label>Animation: </label> <select id="ddl-animations"></select> <button type="button" id="btn-new-animation" >Nova Animação</button>
+    <br/>
+    <label>Animation Frame (<span id="animation-frame-value"></span>)</label>
+    <input id="range-animation-frames" type="range" min="0" max="0" step="1" />
+    <div>
+        <h3>Animation Data</h3>
+        <label>Duration (frames): </label> <input type="number" id="animation-duration" min="0" />
+        <div id="parts-data"></div>
+    </div>
+</div>
+
+<canvas id="debug-canvas" style="position: absolute; top: 300px; display: none;"></canvas>
+
+<div id="show-emotes" style="display: none;"></div>
+
+<div id="debug">
+    <canvas id="debugAtlasSection"></canvas>
+    <canvas id="debugAtlas"></canvas>
+</div>
+
+<script type="module">
+    //@ts-check
+    import engine from '/scaworld/js/engine.js';
+    import game from '/scaworld/js/game.js';
+    import { atlases, charDefinitions, propsDefinition, createAllAtlas } from '/scaworld/js/atlasManager.js';
+    import charAnimatior from '/scaworld/js/characterAnimator.js';
+    import editor from '/scaworld/js/editor.js';
+
+    const debug = /** @type {HTMLCanvasElement} */ (document.getElementById('debugAtlas'));
+    const ctx = /** @type {CanvasRenderingContext2D} */ debug.getContext('2d');
+
+    const ddlAtlas = document.getElementById('ddlAtlas');
+    const ddlAtlasSection = document.getElementById('ddlAtlasSection');
+
+    engine.resizeCanvas(1920, 190);
+    const lblFps = document.getElementsByClassName('fps')[0];
+    const canvas = engine.canvas;
+    const gl = engine.gl;
+    const programData = engine.programData;
+
+    /*setTimeout(() => {
+        createChar({
+            "userId": "145590747",
+            "username": "scavote",
+            "name": "scavote",
+            "isMod": true,
+            "isCitizen": true,
+            "isOnWorld": true,
+            "isDead": null,
+            "preset": {
+                "helmet": "/char/props/helmet/coroa.png",
+                "capeFront": "/char/props-especial/cape/cape_front.png",
+                "capeBack": "/char/props-especial/cape/cape_back.png",
+                "face": "/char/props-especial/face/moustache.png",
+                "head": "/char/body/skeleton/head",
+                "body": "/char/body/skeleton/body",
+                "legs": "/char/body/skeleton/legs",
+                "weapon": "/char/props/equip/espada",
+                "second_weapon": "/char/props/equip/escudo_madeira"
+            }
+        }, 'point');
+        createChar();
+        createChar();
+    }, 1000);*/
+
+    console.log(atlases);
+
+    /*const createChar = (userData, spawn) => {
+        if (!spawn) spawn = Character.spawnType.portal;
+        if (spawn == 'point') spawn = Character.spawnType.position;
+        const char = new Character({ position: { x: 400, y: 40 }, userData, spawnType: spawn });
+    }*/
+
+    async function loadJSON(url) {
+        const r = await fetch(url);
+        const text = await r.text();
+        return JSON.parse(text);
+    }
+
+    (async () => {
+        console.log(`Canvas Width: ${canvas.width} / Height: ${canvas.height}`);
+
+        let floatingTime = 0;
+
+        const {
+            propCenarioFBO,
+            cenarioFBO,
+            backgroundFBO,
+            lightFBO,
+            charDrawer,
+            propDrawer,
+            backgroundDrawer,
+            cenarioDrawer,
+            rioDrawer,
+            rawDrawer,
+            dyPropDrawer,
+            lightDrawer,
+        } = await game.setup(gl);
+
+        //window.portal = game.getPropList().find(x => x.constructor.name == "Portal");
+
+        engine.on('everySecond', () => {
+            lblFps.innerHTML = engine.getFramerate();
+            debug.width = atlases['char']['canvas'].width;
+            debug.height = atlases['char']['canvas'].height;
+            if (ctx)
+                ctx.drawImage(atlases['char']['canvas'], 0, 0)
+            if (Math.floor(Math.random() * 99) <= 7) {
+                //createProp('Nuvem', { pos: { x: -100, y: canvas.height - (Math.floor(Math.random() * 45) + 10) }, depth: 1 });
+            }
+        });
+
+        window['user'] = game.game.users[1];
+
+        window['data'] = {
+            index: 0,
+            depth: 1,
+            position: { x: 100, y: 100 },
+            size: { width: 32, height: 32 },
+            isFlipedX: false,
+            currentFrame: 0,
+            parts: {
+                body: {
+                    texture: '/char/body/skeleton/body/default.png',
+                    currentFrame: 0,
+                    texOffset: [],
+                },
+                head: {
+                    texture: '/char/body/skeleton/head/default.png',
+                    currentFrame: 0,
+                    texOffset: [],
+                },
+                legs: {
+                    texture: '/char/body/skeleton/legs/default.png',
+                    currentFrame: 0,
+                    texOffset: [],
+                },
+                helmet: {
+                    texture: '/char/props/helmet/coroa.png',
+                    currentFrame: 0,
+                    texOffset: [],
+                },
+                pants: {
+                    texture: '/char/props/pants/leather/default.png',
+                    currentFrame: 0,
+                    texOffset: [],
+                },
+            },
+        };
+
+        engine.programData['char'].addToTransform(null, 1);
+
+        charAnimatior.loadSpritesData();
+
+        engine.on('everyFrame', () => {
+
+            if (!editor.running()) {
+                charAnimatior.processUserAnimation(window['user']);
+            }
+
+            //engine.programData.char.updateTransformPart(window['data'], charDefinitions);
+
+            // DRAW CHARS
+            gl.useProgram(programData['char'].program);
+            gl.activeTexture(gl.TEXTURE0 + charDrawer.atlasIndex);
+            gl.activeTexture(gl.TEXTURE0 + charDrawer.normalIndex);
+            gl.bindVertexArray(programData['char'].vao);
+            gl.bindBuffer(gl.ARRAY_BUFFER, programData['char'].transformBuffer);
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, programData['char'].transformData);
+            gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, 1 * engine.countOfCharProps);
+            gl.bindVertexArray(null);
+            // END DRAW CHARS
+
+            floatingTime += 0.001;
+        });
+
+        editor.register();
+
+    })();
+
+</script>
