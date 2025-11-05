@@ -1,0 +1,19 @@
+[
+    "/world/props/casa.png",
+    "/world/props/bonfas.png",
+    "/world/natural/arvore.png",
+    "/world/natural/chao.png",
+    "/world/natural/chao2.png",
+    "/world/natural/grama.png",
+    "/world/natural/moita.png",
+    "/world/natural/moita2.png",
+    "/world/natural/nuvem.png",
+    [
+        "/world/props/carroca.png",
+        "/world/props/carroca-normal.png"
+    ],
+    "/portal/portal-atlas.png",
+    "/portal/portal-abrindo-sheet.png",
+    "/world/atk/flecha.png",
+    "/world/effect/exhaust.png"
+]

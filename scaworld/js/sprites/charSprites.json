@@ -1,0 +1,61 @@
+[
+    "/char/body/skeleton/head/default.png",
+    "/char/body/skeleton/head/attack.png",
+    "/char/body/skeleton/head/attackbow.png",
+    "/char/body/skeleton/head/jump.png",
+    "/char/body/skeleton/head/def.png",
+    "/char/body/skeleton/head/bran.png",
+
+    "/char/body/skeleton/body/default.png",
+    "/char/body/skeleton/body/jump.png",
+    "/char/body/skeleton/body/attack.png",
+    "/char/body/skeleton/body/attackbow.png",
+    "/char/body/skeleton/body/def.png",
+    "/char/body/skeleton/body/bran.png",
+
+    "/char/body/skeleton/legs/default.png",
+    "/char/body/skeleton/legs/attack.png",
+    "/char/body/skeleton/legs/attackbow.png",
+    "/char/body/skeleton/legs/jump.png",
+    "/char/body/skeleton/legs/def.png",
+    "/char/body/skeleton/legs/bran.png",
+
+    "/char/body/human/head/default.png",
+    "/char/body/human/body/default.png",
+    "/char/body/human/legs/default.png",
+
+    "/char/props/equip/espada/default.png",
+    "/char/props/equip/espada/attack.png",
+    "/char/props/equip/espada/jump.png",
+    "/char/props/equip/espada/def.png",
+    "/char/props/equip/espada/drop.png",
+
+    "/char/props/equip/escudo_madeira/default.png",
+    "/char/props/equip/escudo_madeira/attack.png",
+    "/char/props/equip/escudo_madeira/jump.png",
+    "/char/props/equip/escudo_madeira/def.png",
+    "/char/props/equip/escudo_madeira/drop.png",
+
+    "/char/props/equip/arco/default.png",
+
+    "/char/props/helmet/blackpower.png",
+    "/char/props/helmet/bruxo.png",
+    "/char/props/helmet/coroa.png",
+    "/char/props/helmet/mugi.png",
+    "/char/props/helmet/sjins.png",
+    "/char/props/helmet/ninja.png",
+
+    "/char/props/chest/leather/default.png",
+    "/char/props/chest/leather/attack.png",
+    "/char/props/chest/leather/attackbow.png",
+    "/char/props/chest/leather/jump.png",
+    
+    "/char/props/pants/leather/default.png",
+    "/char/props/pants/leather/attack.png",
+    "/char/props/pants/leather/attackbow.png",
+    "/char/props/pants/leather/jump.png",
+    
+    "/char/props-especial/face/moustache.png",
+    "/char/props-especial/cape/cape_front.png",
+    "/char/props-especial/cape/cape_back.png"
+]
