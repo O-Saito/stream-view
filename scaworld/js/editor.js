@@ -256,6 +256,13 @@ export default {
         charAnimatior.processUserAnimation(targetUser);
         updateDdlAnimations();
         ddlAnimations.dispatchEvent(new Event('change'));
+        const htmlMain = /** @type {HTMLElement} */ (document.querySelector(".html-main"));
+        htmlMain.style.height = "200px";
+        htmlMain.style.width = "500px";
+        htmlMain.style.position = "sticky";
+        htmlMain.style.float = "right";
+        htmlMain.style.top = "0"; 
     },
     running: () => running,
+
 };
