@@ -122,7 +122,7 @@ ddlAnimations.onchange = function () {
         const persetDataset = /** @type {HTMLElement} */(target.closest('.per-set-data'))?.dataset;
         
         if (!dataset || !dataset.animation || !dataset.name || !persetDataset || !persetDataset.index || !targetAnimation) return;
-        targetAnimation.parts[dataset.animation][dataset.name].sets =  targetAnimation.parts[dataset.animation][dataset.name].sets.splice(parseInt(persetDataset.index) - 1, 1);
+        targetAnimation.parts[dataset.animation][dataset.name].sets.splice(parseInt(persetDataset.index) - 1, 1);
         ddlAnimations.dispatchEvent(new Event('change'));
     });
 
@@ -288,4 +288,5 @@ export default {
     running: () => running,
 
 };
+
 
