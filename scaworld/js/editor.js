@@ -22,6 +22,7 @@ const btnNewAnimation = /** @type {HTMLInputElement} */ (document.getElementById
 const inputAnimationDuration = /** @type {HTMLInputElement} */ (document.getElementById('animation-duration'));
 const htmlPartsData = /** @type {HTMLElement} */ (document.getElementById('parts-data'));
 const aniamtionFramevalue = /** @type {HTMLElement} */ (document.getElementById('animation-frame-value'));
+const btnBaixarJson = /** @type {HTMLElement} */ (document.getElementById('btn-baixar-json'));
 
 btnNewAnimation.onclick = function () {
     const val = prompt("Informe o nome da animação!");
@@ -219,6 +220,27 @@ inputAnimationDuration.onchange = function () {
     targetAnimation.duration = parseInt(inputAnimationDuration.value);
 }
 
+btnBaixarJson.onclick = function () {
+    downloadJsonFile(charAnimatior.animations, "character-animations.json");
+}
+
+function editorProcessUserAnimation() {
+    if (targetUser == null) return;
+    const sprite = targetUser.components.sprite;
+    const animation = charAnimatior.animations[sprite.animation];
+    if (animation == null) throw new Error("Animation not found!");
+
+    sprite.currentFrame++;
+
+    if (sprite.currentFrame >= animation.duration) {
+        sprite.currentFrame = 0;
+    }
+
+    const data = charAnimatior.getAnimationData(targetUser);
+
+    engine.programData.char.updateTransformPart(data, charDefinitions);
+}
+
 function editorProcessUserAnimation() {
     if (targetUser == null) return;
     const sprite = targetUser.components.sprite;
@@ -266,3 +288,4 @@ export default {
     running: () => running,
 
 };
+
