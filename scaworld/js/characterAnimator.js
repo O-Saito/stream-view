@@ -4,6 +4,8 @@
 /** @import {CharShaderData, PartData} from "./engine.js" */
 import engine from './engine.js'
 import { charDefinitions } from './atlasManager.js';
+/** @type {Object.<string, AnimationMainStruct>} */
+import characterAnimations from './sprites/character-animations.json' with { type: 'json' };
 
 const characterParts = [
     "capeBack",
@@ -29,14 +31,25 @@ const characterParts = [
 let spritesData = {};
 
 /** 
+ * @typedef {Object} PosOffset
+ * @property {number} [x]
+ * @property {number} [y] 
+ * 
+ * @typedef {Object} ExceptionsData
+ * @property {boolean} replaceParent
+ * @property {AnimationPartData} part
+ * 
  * @typedef {Object} AnimationPartSet
  * @property {number} keyframe
+ * @property {string} [texture]
  * @property {number} [useSpriteFrame]
- * @property {Position} [posOffset]
+ * @property {PosOffset} [posOffset]
  * 
  * @typedef {Object} AnimationPartData
  * @property {string} [texture]
+ * @property {PosOffset} [posOffset]
  * @property {Array<AnimationPartSet>} sets
+ * @property {Array<ExceptionsData>} [exceptions]
  * 
  * @typedef {Object.<string, AnimationPartData>} AnimationParts
  * 
@@ -50,7 +63,7 @@ let spritesData = {};
 /**
  * @type {Object.<string, AnimationMainStruct>}
  */
-const animations = {
+const animations = characterAnimations;/*{
     idle: {
         duration: 60,
         parts: {
@@ -102,7 +115,7 @@ const animations = {
             },
         }
     },
-};
+};*/
 
 /**
  * 
@@ -123,43 +136,76 @@ function getAnimationData(user) {
     characterParts.forEach(partName => {
         const charPart = sprite.parts[partName];
         const animationPart = animation.parts[partName];
-        if (!charPart) return;
-
-        const currentSet = animationPart.default.sets.slice().sort((a, b) => b.keyframe - a.keyframe).find(x => sprite.currentFrame >= x.keyframe);
-        let subpartName = animationPart.default.texture ?? "/default.png";
+        if (!charPart || charPart.texture == null || charPart.texture == undefined || charPart.texture == "") {
+            parts[partName] = {
+                texture: "",
+                currentFrame: 0,
+                posOffset: {
+                    x: 0,
+                    y: 0,
+                },
+                texOffset: {
+                    x: -32,
+                    y: 0,
+                    ax: 0,
+                    ay: 0,
+                }
+            }
+            return;
+        }
 
         let textureName = charPart.texture;
-        let offsetX = 0;
-        let posOffset = { x: currentSet?.posOffset?.x ?? 0, y: currentSet?.posOffset?.y ?? 0 };
-        if (textureName != null) {
+        let spriteOffset = { x: 0, y: 0 };
+        let posOffset = { x: 0, y: 0 };
+        let imageFrameCount = 1;
 
-            let imageFrameCount = 1;
+        // compute part data
 
-            if (spritesData[textureName]) {
-                if (spritesData[textureName]?.multiParts) {
-                    const multiParts = spritesData[textureName]?.multiParts;
+        /** @param {AnimationPartData} currentPart */
+        const compute = (currentPart) => {
+            let subpartName = currentPart.texture ?? "/default.png";
+            const currentSet = currentPart.sets.slice().sort((a, b) => b.keyframe - a.keyframe).find(x => sprite.currentFrame >= x.keyframe);
+            if (currentSet?.texture) {
+                subpartName = currentSet.texture;
+            }
+            if (currentSet?.posOffset) {
+                if (currentSet.posOffset.x) posOffset.x += currentSet.posOffset.x;
+                if (currentSet.posOffset.y) posOffset.y += currentSet.posOffset.y;
+            }
+            
+            if (currentPart.posOffset) {
+                if (currentPart.posOffset.x) posOffset.x += currentPart.posOffset.x;
+                if (currentPart.posOffset.y) posOffset.y += currentPart.posOffset.y;
+            }
+           
+            if (charPart.texture && spritesData[charPart.texture]) {
+                if (spritesData[charPart.texture]?.multiParts) {
+                    const multiParts = spritesData[charPart.texture]?.multiParts;
                     if (multiParts && multiParts[subpartName]) {
-                        textureName += subpartName;
+                        textureName = charPart.texture + subpartName;
                         imageFrameCount = multiParts[subpartName].frameCount;
                     }
                 } else {
                     imageFrameCount = spritesData[textureName].frameCount;
                 }
-            } else if (spritesData[textureName + subpartName]) {
-                textureName = textureName + subpartName;
-                imageFrameCount = spritesData[textureName + subpartName].frameCount;
-            } else {
-                textureName = "";
+            } else if (spritesData[charPart.texture + subpartName]) {
+                textureName = charPart.texture + subpartName;
+                imageFrameCount = spritesData[textureName].frameCount;
             }
 
+            if(partName == "capeBack") console.log('here');
             if (currentSet?.useSpriteFrame && currentSet.useSpriteFrame <= imageFrameCount) {
-                offsetX = currentSet.useSpriteFrame * 32;
+                spriteOffset.x = currentSet.useSpriteFrame * 32;
             }
 
-            if (partName == "helmet") {
-                posOffset.x += parts.head.posOffset.x;
-                posOffset.y += parts.head.posOffset.y;
-            }
+        }
+
+        compute(animationPart.default);
+
+
+        if (partName == "helmet" || partName == "face") {
+            posOffset.x += parts.head.posOffset.x;
+            posOffset.y += parts.head.posOffset.y;
         }
 
         if (partName == 'body' && sprite.currentFrame >= 10) console.log('here');
@@ -172,8 +218,8 @@ function getAnimationData(user) {
                 y: posOffset.y,
             },
             texOffset: {
-                x: offsetX,
-                y: 0,
+                x: spriteOffset.x,
+                y: spriteOffset.y,
                 ax: 0,
                 ay: 0,
             }
