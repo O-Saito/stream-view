@@ -100,6 +100,10 @@
     #uiCanvas {
         position: relative;
     }
+
+    #parts-data input[type="number"] {
+        max-width: 60px;
+    }
 </style>
 
 <div class="html-main" style="height: 200px;">
@@ -111,18 +115,21 @@
             <div class="element fps"></div>
             <div class="element time"></div>
             <div class="element size"></div>
+            <div>
+                <label>Animation: </label> <select id="ddl-animations"></select>
+                <button type="button" id="btn-new-animation">Nova Animação</button>
+                <button type="button" id="btn-baixar-json">Salvar</button>
+                <br />
+                <label><input id="chk-pause" type="checkbox" /> Pause</label> <br />
+                <label>Animation Frame (<span id="animation-frame-value"></span>)</label>
+                <input id="range-animation-frames" type="range" min="0" max="0" step="1" />
+            </div>
         </div>
     </div>
 </div>
 
 <div>
-    <label><input id="chk-pause" type="checkbox" /> Pause</label>
-    <br/>
-    <label>Animation: </label> <select id="ddl-animations"></select> <button type="button" id="btn-new-animation" >Nova Animação</button>
-    <br/>
-    <label>Animation Frame (<span id="animation-frame-value"></span>)</label>
-    <input id="range-animation-frames" type="range" min="0" max="0" step="1" /><button type="button" id="btn-baixar-json">Salvar</button>
-    <div>
+    <div style="max-width: 50%;">
         <h3>Animation Data</h3>
         <label>Duration (frames): </label> <input type="number" id="animation-duration" min="0" />
         <div id="parts-data"></div>
