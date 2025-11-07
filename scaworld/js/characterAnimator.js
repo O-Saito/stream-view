@@ -36,6 +36,7 @@ let spritesData = {};
  * @property {number} [y] 
  * 
  * @typedef {Object} ExceptionsData
+ * @property {Object.<string, Array<string>>} keys
  * @property {boolean} replaceParent
  * @property {AnimationPartData} part
  * 
@@ -139,7 +140,6 @@ function getAnimationData(user) {
         if (!charPart || charPart.texture == null || charPart.texture == undefined || charPart.texture == "") {
             parts[partName] = {
                 texture: "",
-                currentFrame: 0,
                 posOffset: {
                     x: 0,
                     y: 0,
@@ -155,9 +155,17 @@ function getAnimationData(user) {
         }
 
         let textureName = charPart.texture;
+        let spriteOffsetComputed = false;
         let spriteOffset = { x: 0, y: 0 };
         let posOffset = { x: 0, y: 0 };
         let imageFrameCount = 1;
+
+        const clearValues = () => {
+            spriteOffset = { x: 0, y: 0 };
+            posOffset = { x: 0, y: 0 };
+            imageFrameCount = 1;
+            spriteOffsetComputed = false;
+        }
 
         // compute part data
 
@@ -168,16 +176,49 @@ function getAnimationData(user) {
             if (currentSet?.texture) {
                 subpartName = currentSet.texture;
             }
+
+            if (currentPart.exceptions && currentPart.exceptions.length > 0) {
+                /** @type {ExceptionsData | null} */
+                let mostExcep = null;
+                let excpKeysCount = 0;
+                currentPart.exceptions.forEach(excp => {
+                    let accept = 0;
+                    const keys = Object.getOwnPropertyNames(excp.keys);
+                    keys.forEach(key => {
+                        if (sprite.parts[key] && excp.keys[key].find(x => x == sprite.parts[key].texture)) {
+                            accept++;
+                        }
+                    });
+
+                    if (keys.length == accept && excpKeysCount < accept) {
+                        mostExcep = excp;
+                        excpKeysCount = accept;
+                    }
+                });
+
+                if (mostExcep != null) {
+                    //@ts-ignore
+                    if (mostExcep.replaceParent) {
+                        clearValues();
+                        //@ts-ignore
+                        compute(mostExcep.part);
+                        return;
+                    }
+                    //@ts-ignore
+                    compute(mostExcep.part);
+                }
+            }
+
             if (currentSet?.posOffset) {
                 if (currentSet.posOffset.x) posOffset.x += currentSet.posOffset.x;
                 if (currentSet.posOffset.y) posOffset.y += currentSet.posOffset.y;
             }
-            
+
             if (currentPart.posOffset) {
                 if (currentPart.posOffset.x) posOffset.x += currentPart.posOffset.x;
                 if (currentPart.posOffset.y) posOffset.y += currentPart.posOffset.y;
             }
-           
+
             if (charPart.texture && spritesData[charPart.texture]) {
                 if (spritesData[charPart.texture]?.multiParts) {
                     const multiParts = spritesData[charPart.texture]?.multiParts;
@@ -193,26 +234,22 @@ function getAnimationData(user) {
                 imageFrameCount = spritesData[textureName].frameCount;
             }
 
-            if(partName == "capeBack") console.log('here');
-            if (currentSet?.useSpriteFrame && currentSet.useSpriteFrame <= imageFrameCount) {
+            if (currentSet?.useSpriteFrame != undefined && currentSet.useSpriteFrame <= imageFrameCount && !spriteOffsetComputed) {
                 spriteOffset.x = currentSet.useSpriteFrame * 32;
+                spriteOffsetComputed = true;
             }
 
         }
 
         compute(animationPart.default);
 
-
         if (partName == "helmet" || partName == "face") {
             posOffset.x += parts.head.posOffset.x;
             posOffset.y += parts.head.posOffset.y;
         }
 
-        if (partName == 'body' && sprite.currentFrame >= 10) console.log('here');
-
         parts[partName] = {
             texture: textureName,
-            currentFrame: 0,
             posOffset: {
                 x: posOffset.x,
                 y: posOffset.y,
@@ -301,7 +338,7 @@ function loadSpritesData() {
             spritesCategories.propEspecial[parts[2]].parts[parts[3]].push({ partName: `/${parts.slice(4).join('/')}`, frameCount: data.imageWidth / 32 });
         }
 
-        console.log(parts);
+        //console.log(parts);
 
     });
 
@@ -369,12 +406,13 @@ function loadSpritesData() {
         });
     });
 
-    console.log('done');
+    //console.log('done');
 }
 
 export default {
     spritesData,
     animations,
+    getSpritesData: () => { return { ...spritesData } },
     getCharacterParts: () => [...characterParts],
     getAnimationData,
     processUserAnimation,
