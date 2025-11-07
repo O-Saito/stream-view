@@ -1,0 +1,402 @@
+{
+  "idle": {
+    "duration": 60,
+    "parts": {
+      "helmet": {
+        "default": {
+          "sets": [],
+          "posOffset": {
+            "y": 12
+          }
+        }
+      },
+      "face": {
+        "default": {
+          "sets": [],
+          "posOffset": {
+            "y": -3,
+            "x": 4
+          }
+        }
+      },
+      "head": {
+        "default": {
+          "texture": "/default.png",
+          "sets": []
+        }
+      },
+      "body": {
+        "default": {
+          "texture": "/default.png",
+          "sets": []
+        }
+      },
+      "pants": {
+        "default": {
+          "texture": "/default.png",
+          "sets": []
+        }
+      },
+      "legs": {
+        "default": {
+          "texture": "/default.png",
+          "sets": []
+        }
+      },
+      "second_weapon": {
+        "default": {
+          "sets": []
+        }
+      },
+      "weapon": {
+        "default": {
+          "sets": []
+        }
+      },
+      "capeFront": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 0,
+              "posOffset": {
+                "y": 0
+              }
+            },
+            {
+              "keyframe": 10,
+              "useSpriteFrame": 1
+            },
+            {
+              "keyframe": 20,
+              "useSpriteFrame": 2
+            },
+            {
+              "keyframe": 30,
+              "useSpriteFrame": 3
+            },
+            {
+              "keyframe": 40,
+              "useSpriteFrame": 4
+            },
+            {
+              "keyframe": 50,
+              "useSpriteFrame": 5
+            }
+          ],
+          "posOffset": {
+            "x": 4,
+            "y": -2
+          }
+        }
+      },
+      "chest": {
+        "default": {
+          "sets": []
+        }
+      },
+      "capeBack": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 0
+            },
+            {
+              "keyframe": 10,
+              "useSpriteFrame": 1
+            },
+            {
+              "keyframe": 20,
+              "useSpriteFrame": 2
+            },
+            {
+              "keyframe": 30,
+              "useSpriteFrame": 3
+            },
+            {
+              "keyframe": 40,
+              "useSpriteFrame": 4
+            },
+            {
+              "keyframe": 50,
+              "useSpriteFrame": 5
+            }
+          ]
+        }
+      }
+    }
+  },
+  "attack": {
+    "duration": 60,
+    "parts": {
+      "second_weapon": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 0,
+              "posOffset": {
+                "y": 0,
+                "x": 0
+              }
+            },
+            {
+              "keyframe": 20,
+              "posOffset": {
+                "y": 1,
+                "x": -3
+              }
+            },
+            {
+              "keyframe": 35,
+              "posOffset": {
+                "y": -1,
+                "x": 2
+              }
+            }
+          ],
+          "texture": "/attack.png",
+          "posOffset": {
+            "x": 3
+          }
+        }
+      },
+      "weapon": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 20,
+              "posOffset": {
+                "x": 0,
+                "y": 0
+              }
+            },
+            {
+              "keyframe": 35,
+              "useSpriteFrame": 1
+            },
+            {
+              "keyframe": 38,
+              "useSpriteFrame": 2
+            },
+            {
+              "keyframe": 0,
+              "texture": "/jump.png",
+              "useSpriteFrame": 1,
+              "posOffset": {
+                "x": -18,
+                "y": 7
+              }
+            }
+          ],
+          "texture": "/attack.png",
+          "posOffset": {
+            "x": 16
+          }
+        }
+      },
+      "capeFront": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 0
+            },
+            {
+              "keyframe": 0
+            },
+            {
+              "keyframe": 0
+            }
+          ],
+          "posOffset": {
+            "x": 4,
+            "y": -4
+          }
+        }
+      },
+      "helmet": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 20,
+              "posOffset": {
+                "y": 2,
+                "x": 0
+              }
+            },
+            {
+              "keyframe": 35,
+              "posOffset": {
+                "y": 0
+              }
+            },
+            {
+              "keyframe": 38
+            },
+            {
+              "keyframe": 0,
+              "posOffset": {
+                "x": -3,
+                "y": 2
+              }
+            }
+          ],
+          "posOffset": {
+            "y": 12,
+            "x": 1
+          }
+        }
+      },
+      "face": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 20,
+              "posOffset": {
+                "y": 0
+              }
+            },
+            {
+              "keyframe": 35,
+              "posOffset": {
+                "y": 0
+              }
+            },
+            {
+              "keyframe": 38
+            },
+            {
+              "keyframe": 0,
+              "posOffset": {
+                "x": -3,
+                "y": 3
+              }
+            }
+          ],
+          "posOffset": {
+            "y": -5,
+            "x": 5
+          }
+        }
+      },
+      "head": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 20
+            },
+            {
+              "keyframe": 35,
+              "useSpriteFrame": 1
+            },
+            {
+              "keyframe": 28,
+              "useSpriteFrame": 2
+            },
+            {
+              "keyframe": 0,
+              "texture": "/jump.png",
+              "useSpriteFrame": 1
+            }
+          ],
+          "texture": "/attack.png"
+        }
+      },
+      "chest": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 0
+            },
+            {
+              "keyframe": 0
+            },
+            {
+              "keyframe": 0
+            }
+          ]
+        }
+      },
+      "body": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 20
+            },
+            {
+              "keyframe": 35,
+              "useSpriteFrame": 1
+            },
+            {
+              "keyframe": 38,
+              "useSpriteFrame": 2
+            },
+            {
+              "keyframe": 0,
+              "texture": "/jump.png",
+              "useSpriteFrame": 1
+            }
+          ],
+          "texture": "/attack.png"
+        }
+      },
+      "pants": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 0
+            },
+            {
+              "keyframe": 0
+            },
+            {
+              "keyframe": 0
+            }
+          ]
+        }
+      },
+      "legs": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 20
+            },
+            {
+              "keyframe": 35,
+              "useSpriteFrame": 1
+            },
+            {
+              "keyframe": 38,
+              "useSpriteFrame": 2
+            },
+            {
+              "keyframe": 0,
+              "texture": "/jump.png"
+            }
+          ],
+          "texture": "/attack.png"
+        }
+      },
+      "capeBack": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 20,
+              "useSpriteFrame": 0
+            },
+            {
+              "keyframe": 35,
+              "useSpriteFrame": 1
+            },
+            {
+              "keyframe": 38,
+              "useSpriteFrame": 2
+            },
+            {
+              "keyframe": 0,
+              "useSpriteFrame": 3
+            }
+          ]
+        }
+      }
+    }
+  }
+}
