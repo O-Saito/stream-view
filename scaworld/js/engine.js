@@ -19,7 +19,6 @@ import atlasManager from './atlasManager.js';
  * @property {Object} [Part.logicOffset]
  * @property {number} Part.logicOffset.x
  * @property {number} Part.logicOffset.y
- * @property {number} Part.currentFrame
  * 
  * @typedef {Object.<string, PartData>} Parts
  * 
@@ -407,11 +406,15 @@ programData.char = setupProgram({
             const set = char.parts[type];
             i = i + skip;
             const pos = { x: char.position.x, y: char.position.y };
-            const texCoordOffset = set ? { x: 0, y: 0 } : { x: -32, y: -32 };
+            const texCoordOffset = { x: -32, y: -32 };
             let rotation = 0;
             let animationLayer = 0;
 
-            if (set) {
+            if(set.texture == "") var a= 0;//console.log("Texture null");
+
+            if (set && set.texture != "") {
+                texCoordOffset.x = 0;
+                texCoordOffset.y = 0;
                 animationLayer = set.texture == null ? 0 : charDefinitions.calcDepth(set.texture);
                 rotation = set.rotation ?? 0;
                 //const texOffset = set.texOffset;
@@ -426,16 +429,6 @@ programData.char = setupProgram({
                     texCoordOffset.x = set.texOffset.x;
                 }
 
-                /*if (texCoordOffset.x != -char.size.width) {
-                    texCoordOffset.x = ((set.isNotSpriteAnimated ? 0 : set.currentFrame) * char.size.width) + (texOffset?.x ?? 0) + (charDefinitions.srcs[set.texture ?? ""]?.w ?? 0);
-                }
-                if (texOffset?.ax) pos.x += texOffset?.ax * (char.isFlipedX ? 1 : -1);
-                if (texOffset?.ay) pos.y += texOffset?.ay;
-
-                if (set.logicOffset) {
-                    if (set.logicOffset.x) pos.x += set.logicOffset.x;
-                    if (set.logicOffset.y) pos.y += set.logicOffset.y;
-                }*/
             }
 
             //if (Number.isNaN(animationLayer)) alert(type + " " + set.texture);
