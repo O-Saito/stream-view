@@ -2,7 +2,7 @@
 /** @import {TexOffset, Position, Size} from "./types/general.js" */
 /** @import {UserObject} from "./game.js" */
 /** @import {CharShaderData, PartData} from "./engine.js" */
-/** @import {AnimationMainStruct} from "./characterAnimator.js" */
+/** @import {AnimationMainStruct, AnimationParts} from "./characterAnimator.js" */
 import engine from './engine.js';
 import game from './game.js';
 import charAnimatior from './characterAnimator.js';
@@ -28,16 +28,26 @@ btnNewAnimation.onclick = function () {
     const val = prompt("Informe o nome da animação!");
     if (val == "" || val == null) return;
 
+    /** @type {Object.<string, AnimationParts>} */
+    let parts = {};
+    characterAnimator.getCharacterParts().reverse().forEach(x => {
+        parts[x] = {
+            default: {
+                sets: []
+            }
+        };
+    });
+
     charAnimatior.animations[val] = {
         duration: 0,
-        parts: {}
+        parts: parts
     };
     updateDdlAnimations();
 }
 
 rangeAnimationFrames.onchange = function () {
     if (targetUser == null) return;
-    targetUser.components.sprite.currentFrame = parseInt(this.value);
+    targetUser.components.sprite.currentFrame = parseInt(this.value) - 1;
     editorProcessUserAnimation();
 }
 
@@ -48,33 +58,47 @@ chkPause.onchange = function () {
 ddlAnimations.onchange = function () {
     targetAnimation = charAnimatior.animations[ddlAnimations.value];
     if (targetAnimation == null) return;
+    if (targetUser) targetUser.components.sprite.animation = ddlAnimations.value;
     inputAnimationDuration.value = targetAnimation.duration.toString();
     htmlPartsData.innerHTML = characterAnimator.getCharacterParts().reverse().map(x => {
-        const p = targetAnimation?.parts[x];
-        const userPart = targetUser?.components.sprite.parts[x];
-        const spriteInfo = charAnimatior.spritesData[userPart?.texture ?? ""];
+        if (!targetAnimation) targetAnimation = { duration: 0, parts: {} };
+        if (!targetAnimation.parts[x]) targetAnimation.parts[x] = { default: { sets: [] } }
+
+        const p = targetAnimation.parts[x];
+        const userPart = targetUser?.components.sprite.parts[x] ?? { texture: "" };
+        const spriteInfo = charAnimatior.spritesData[userPart.texture ?? ""] ?? {};
+
+
         if (!p || !userPart || !spriteInfo) return '';
         return `
-<div>
-    <label>${x} : <select class="ddl-user-texture">${Object.getOwnPropertyNames(charAnimatior.spritesData).map(texName => { return `<option ${texName == userPart.texture ? "selected" : ""} >${texName}</option>`; }).join('')}</select></label> 
+<div style="padding-left: 10px;margin-bottom: 10px;border-bottom: 1px solid;padding-bottom: 5px;">
+    <label style="font-weight: bolder;">${x} : <select class="ddl-user-texture"><option value=""></option>${Object.getOwnPropertyNames(charAnimatior.spritesData).map(texName => { return `<option ${texName == userPart.texture ? "selected" : ""} >${texName}</option>`; }).join('')}</select></label> 
     <br/>
     ${Object.getOwnPropertyNames(p).map(presetName => {
             return `
             ${presetName}: 
     <ul class="set-data" data-animation="${x}" data-name="${presetName}">
         <li>Texture: ${spriteInfo.multiParts ? `<select class="ddl-skin-part">${Object.getOwnPropertyNames(spriteInfo.multiParts).map(spritePartName => {
-                console.log(spriteInfo.multiParts);
-                return `<option ${spritePartName == p[presetName].texture ? "selected" : ""} >${spritePartName}</option>`;
+                return `<option ${spritePartName == p[presetName].texture ? "selected" : ""} value="${spritePartName}" >${spritePartName}</option>`;
             }).join('')}</select>` : p[presetName].texture ?? ""}</li>
+        <li>Pos offset: x: <input type="number" class="main-pos-offset-x" value="${p[presetName].posOffset?.x ?? "0"}" /> y: <input type="number" class="main-pos-offset-y" value="${p[presetName].posOffset?.y ?? "0"}" /></li>
         <li>Sets: <button type="button" class="add-set">Add Set</button>
             <ul>
                 ${p[presetName].sets.map((set, i) => {
                 return `
-                <li class="per-set-data" data-index="${i}">
+                <li class="per-set-data" data-index="${i}" style="margin-bottom: 10px;">
                     <button type="button" class="remove-set">Remove Set</button>
                     Keyframe: <input type="number" class="keyframe" data-index="${i}" value="${set.keyframe}" min="0" max="${targetAnimation?.duration}" />
                     <br/>
-                    UseSpriteFrame: <input type="number" class="useSpriteFrame" data-index=${i} value=${set.useSpriteFrame ?? "0"} />
+                    ${spriteInfo.multiParts ? `Replace Texture: 
+                        <select class="ddl-skin-set">
+                            <option value="">Preset Selected</option>
+                            ${Object.getOwnPropertyNames(spriteInfo.multiParts).map(spritePartName => {
+                    return `<option ${spritePartName == set.texture ? "selected" : ""} value="${spritePartName}" >${spritePartName}</option>`;
+                }).join('')}
+                        </select>` : ""}
+                    <br/>
+                    UseSpriteFrame: <input type="number" class="useSpriteFrame" data-index=${i} value=${set.useSpriteFrame ? set.useSpriteFrame + 1 : "1"} min="1" max=${spriteInfo?.multiParts && p[presetName].texture && spriteInfo.multiParts[p[presetName].texture] ? spriteInfo.multiParts[p[presetName].texture].frameCount : spriteInfo.frameCount} />
                     <br/>
                     Pos offset: x: <input type="number" class="posoffsetx" value="${set.posOffset?.x ?? "0"}" /> y: <input type="number" class="posoffsety" value="${set.posOffset?.y ?? "0"}" />
                 </li>`;
@@ -100,7 +124,10 @@ ddlAnimations.onchange = function () {
         const els = /** @type {NodeListOf<HTMLInputElement>} */(htmlPartsData.querySelectorAll(query));
         for (let i = 0; i < els.length; i++) {
             // @ts-ignore
-            els[i][action] = func;
+            els[i][action] = (e) => {
+                func(e);
+                if (rangeAnimationFrames?.onchange) rangeAnimationFrames.onchange(new Event(""));
+            };
         }
     }
 
@@ -120,9 +147,9 @@ ddlAnimations.onchange = function () {
         if (!target) return;
         const dataset = /** @type {HTMLElement} */(target.closest('.set-data'))?.dataset;
         const persetDataset = /** @type {HTMLElement} */(target.closest('.per-set-data'))?.dataset;
-        
+
         if (!dataset || !dataset.animation || !dataset.name || !persetDataset || !persetDataset.index || !targetAnimation) return;
-        targetAnimation.parts[dataset.animation][dataset.name].sets.splice(parseInt(persetDataset.index) - 1, 1);
+        targetAnimation.parts[dataset.animation][dataset.name].sets.splice(parseInt(persetDataset.index), 1);
         ddlAnimations.dispatchEvent(new Event('change'));
     });
 
@@ -147,72 +174,84 @@ ddlAnimations.onchange = function () {
         }
         else
             // @ts-ignore
-            part.sets[parseInt(persetDataset.index)][attribute] = parseInt(htmlElement.value);
-    }
-
-    const elementsKeyFrames = /** @type {NodeListOf<HTMLInputElement>} */ (htmlPartsData.querySelectorAll('.keyframe'));
-    for (let i = 0; i < elementsKeyFrames.length; i++) {
-        elementsKeyFrames[i].onchange = function (e) {
-            const target = /** @type {HTMLInputElement} */(e.target)
-            if (!target) return;
-            changesetdata(target, "keyframe", parseInt(target.value));
-        };
-    }
-
-    const elementsUseSpriteFrame = /** @type {NodeListOf<HTMLInputElement>} */ (htmlPartsData.querySelectorAll('.useSpriteFrame'));
-    for (let i = 0; i < elementsUseSpriteFrame.length; i++) {
-        elementsUseSpriteFrame[i].onchange = function (e) {
-            const target = /** @type {HTMLInputElement} */(e.target)
-            if (!target) return;
-            changesetdata(target, "useSpriteFrame", parseInt(target.value));
-        };
-    }
-
-    const elementsPosOffsetX = /** @type {NodeListOf<HTMLInputElement>} */ (htmlPartsData.querySelectorAll('.posoffsetx'));
-    for (let i = 0; i < elementsPosOffsetX.length; i++) {
-        elementsPosOffsetX[i].onchange = function (e) {
-            const target = /** @type {HTMLInputElement} */(e.target)
-            if (!target) return;
-            changesetdata(target, ["posOffset", "x"], parseInt(target.value));
-        };
-    }
-
-    const elementsPosOffsetY = /** @type {NodeListOf<HTMLInputElement>} */ (htmlPartsData.querySelectorAll('.posoffsety'));
-    for (let i = 0; i < elementsPosOffsetY.length; i++) {
-        elementsPosOffsetY[i].onchange = function (e) {
-            const target = /** @type {HTMLInputElement} */(e.target)
-            if (!target) return;
-            changesetdata(target, ["posOffset", "y"], parseInt(target.value));
-        };
+            part.sets[parseInt(persetDataset.index)][attribute] = value;
     }
 
 
-    const elementsDdlSkinPart = /** @type {NodeListOf<HTMLInputElement>} */ (htmlPartsData.querySelectorAll('.ddl-skin-part'));
-    for (let i = 0; i < elementsDdlSkinPart.length; i++) {
-        elementsDdlSkinPart[i].onchange = function (e) {
-            const target = /** @type {HTMLInputElement} */(e.target)
-            if (!target) return;
+    on(".keyframe", "onchange", (/** @type {Event} */e) => {
+        const target = /** @type {HTMLInputElement} */(e.target)
+        if (!target) return;
+        changesetdata(target, "keyframe", parseInt(target.value));
+    });
 
-            const dataset = /** @type {HTMLElement} */(target.closest('.set-data'))?.dataset;
-            if (!dataset.name || !dataset.animation) return;
-            const skin = targetAnimation?.parts[dataset.animation][dataset.name];
-            if (skin == undefined) return;
-            skin.texture = target.value;
-        };
-    }
+    on(".useSpriteFrame", "onchange", (/** @type {Event} */e) => {
+        const target = /** @type {HTMLInputElement} */(e.target)
+        if (!target) return;
+        changesetdata(target, "useSpriteFrame", parseInt(target.value) - 1);
+    });
 
-    const elementsDdlUserTexture = /** @type {NodeListOf<HTMLInputElement>} */ (htmlPartsData.querySelectorAll('.ddl-user-texture'));
-    for (let i = 0; i < elementsDdlUserTexture.length; i++) {
-        elementsDdlUserTexture[i].onchange = function (e) {
-            const target = /** @type {HTMLInputElement} */(e.target)
-            if (!target) return;
+    on(".posoffsetx", "onchange", (/** @type {Event} */e) => {
+        const target = /** @type {HTMLInputElement} */(e.target)
+        if (!target) return;
+        changesetdata(target, ["posOffset", "x"], parseInt(target.value));
+    });
 
-            const dataset = /** @type {HTMLElement} */(target.closest("div")?.querySelector('.set-data'))?.dataset;
-            if (!dataset.animation || !targetUser) return;
-            targetUser.components.sprite.parts[dataset.animation].texture = target.value;
-            ddlAnimations.dispatchEvent(new Event('change'));
-        };
-    }
+    on(".posoffsety", "onchange", (/** @type {Event} */e) => {
+        const target = /** @type {HTMLInputElement} */(e.target)
+        if (!target) return;
+        changesetdata(target, ["posOffset", "y"], parseInt(target.value));
+    });
+
+    on(".main-pos-offset-x", "onchange", (/** @type {Event} */e) => {
+        const target = /** @type {HTMLInputElement} */(e.target)
+        if (!target) return;
+        const dataset = /** @type {HTMLElement} */(target.closest('.set-data'))?.dataset;
+        if (!dataset.name || !dataset.animation) return;
+        if (targetAnimation?.parts[dataset.animation][dataset.name]?.sets == undefined) return;
+        const part = targetAnimation.parts[dataset.animation][dataset.name];
+        if (!part.posOffset) part.posOffset = {};
+        part.posOffset.x = parseInt(target.value);
+    });
+
+    on(".main-pos-offset-y", "onchange", (/** @type {Event} */e) => {
+        const target = /** @type {HTMLInputElement} */(e.target)
+        if (!target) return;
+        const dataset = /** @type {HTMLElement} */(target.closest('.set-data'))?.dataset;
+        if (!dataset.name || !dataset.animation) return;
+        if (targetAnimation?.parts[dataset.animation][dataset.name]?.sets == undefined) return;
+        const part = targetAnimation.parts[dataset.animation][dataset.name];
+        if (!part.posOffset) part.posOffset = {};
+        part.posOffset.y = parseInt(target.value);
+    });
+
+    on(".ddl-skin-part", "onchange", (/** @type {Event} */e) => {
+        const target = /** @type {HTMLInputElement} */(e.target)
+        if (!target) return;
+
+        const dataset = /** @type {HTMLElement} */(target.closest('.set-data'))?.dataset;
+        if (!dataset.name || !dataset.animation) return;
+        const skin = targetAnimation?.parts[dataset.animation][dataset.name];
+        if (skin == undefined) return;
+        skin.texture = target.value;
+    });
+
+    on(".ddl-skin-set", "onchange", (/** @type {Event} */e) => {
+        const target = /** @type {HTMLInputElement} */(e.target)
+        if (!target) return;
+        changesetdata(target, "texture", target.value);
+    });
+
+
+    on(".ddl-user-texture", "onchange", (/** @type {Event} */e) => {
+        const target = /** @type {HTMLInputElement} */(e.target)
+        if (!target) return;
+
+        const dataset = /** @type {HTMLElement} */(target.closest("div")?.querySelector('.set-data'))?.dataset;
+        if (!dataset.animation || !targetUser) return;
+        if (!targetUser.components.sprite.parts[dataset.animation]) targetUser.components.sprite.parts[dataset.animation] = { texture: "", currentFrame: 0 }
+        targetUser.components.sprite.parts[dataset.animation].texture = target.value;
+        ddlAnimations.dispatchEvent(new Event('change'));
+    });
 }
 
 inputAnimationDuration.onchange = function () {
@@ -241,25 +280,28 @@ function editorProcessUserAnimation() {
     engine.programData.char.updateTransformPart(data, charDefinitions);
 }
 
-function editorProcessUserAnimation() {
-    if (targetUser == null) return;
-    const sprite = targetUser.components.sprite;
-    const animation = charAnimatior.animations[sprite.animation];
-    if (animation == null) throw new Error("Animation not found!");
-
-    sprite.currentFrame++;
-
-    if (sprite.currentFrame >= animation.duration) {
-        sprite.currentFrame = 0;
-    }
-
-    const data = charAnimatior.getAnimationData(targetUser);
-
-    engine.programData.char.updateTransformPart(data, charDefinitions);
-}
-
 function updateDdlAnimations() {
     ddlAnimations.innerHTML = Object.getOwnPropertyNames(charAnimatior.animations).map(x => `<option value="${x}">${x}</option>`).join('');
+}
+
+/**
+ * @param {Object} data 
+ * @param {string} filename 
+ */
+function downloadJsonFile(data, filename) {
+    const jsonString = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename || "data.json"; // Default filename if not provided
+
+    document.body.appendChild(a); // Append to body to ensure it's in the DOM for IE/Edge
+    a.click();
+    document.body.removeChild(a); // Remove after click
+
+    URL.revokeObjectURL(url);
 }
 
 export default {
@@ -283,10 +325,7 @@ export default {
         htmlMain.style.width = "500px";
         htmlMain.style.position = "sticky";
         htmlMain.style.float = "right";
-        htmlMain.style.top = "0"; 
+        htmlMain.style.top = "0";
     },
     running: () => running,
-
 };
-
-
