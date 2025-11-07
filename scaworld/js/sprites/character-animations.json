@@ -79,12 +79,6 @@
         "default": {
           "sets": [
             {
-              "keyframe": 0,
-              "posOffset": {
-                "y": 0
-              }
-            },
-            {
               "keyframe": 10,
               "useSpriteFrame": 1
             },
@@ -443,6 +437,357 @@
               "useSpriteFrame": 3
             }
           ]
+        }
+      }
+    }
+  },
+  "walk": {
+    "duration": 40,
+    "parts": {
+      "second_weapon": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 20,
+              "useSpriteFrame": 0,
+              "texture": "/default.png",
+              "posOffset": {
+                "x": 2,
+                "y": -1
+              }
+            }
+          ],
+          "posOffset": {
+            "x": 2,
+            "y": 2
+          }
+        }
+      },
+      "weapon": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 10,
+              "useSpriteFrame": 0,
+              "posOffset": {
+                "x": -1
+              },
+              "texture": "/default.png"
+            }
+          ],
+          "texture": "/default.png",
+          "posOffset": {
+            "x": 0,
+            "y": 1
+          }
+        }
+      },
+      "capeFront": {
+        "default": {
+          "sets": []
+        }
+      },
+      "helmet": {
+        "default": {
+          "sets": []
+        }
+      },
+      "face": {
+        "default": {
+          "sets": []
+        }
+      },
+      "head": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 20,
+              "useSpriteFrame": 1,
+              "texture": "/default.png",
+              "posOffset": {
+                "y": 0,
+                "x": 0
+              }
+            },
+            {
+              "keyframe": 30,
+              "useSpriteFrame": 1,
+              "texture": "/default.png",
+              "posOffset": {
+                "x": 0,
+                "y": 0
+              }
+            },
+            {
+              "keyframe": 0,
+              "useSpriteFrame": 0,
+              "posOffset": {
+                "y": 0,
+                "x": 1
+              }
+            }
+          ],
+          "texture": "/default.png",
+          "posOffset": {
+            "y": 0
+          }
+        }
+      },
+      "chest": {
+        "default": {
+          "sets": []
+        }
+      },
+      "body": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 0,
+              "useSpriteFrame": 0,
+              "texture": "/default.png"
+            },
+            {
+              "keyframe": 10,
+              "useSpriteFrame": 1,
+              "texture": "/default.png"
+            },
+            {
+              "keyframe": 20,
+              "useSpriteFrame": 2,
+              "texture": "/default.png"
+            },
+            {
+              "keyframe": 30,
+              "useSpriteFrame": 3,
+              "texture": "/default.png"
+            }
+          ],
+          "texture": "/default.png",
+          "posOffset": {
+            "x": 0,
+            "y": 0
+          },
+          "exceptions": []
+        }
+      },
+      "pants": {
+        "default": {
+          "sets": []
+        }
+      },
+      "legs": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 0,
+              "useSpriteFrame": 2,
+              "posOffset": {
+                "x": 0
+              }
+            },
+            {
+              "keyframe": 10,
+              "useSpriteFrame": 1,
+              "posOffset": {
+                "y": 0
+              }
+            },
+            {
+              "keyframe": 20,
+              "useSpriteFrame": 2,
+              "posOffset": {
+                "x": 0
+              }
+            },
+            {
+              "keyframe": 30,
+              "useSpriteFrame": 3,
+              "posOffset": {
+                "y": 0,
+                "x": 0
+              }
+            }
+          ],
+          "texture": "/default.png",
+          "posOffset": {
+            "x": 1
+          }
+        }
+      },
+      "capeBack": {
+        "default": {
+          "sets": []
+        }
+      }
+    }
+  },
+  "walkBow": {
+    "duration": 40,
+    "parts": {
+      "second_weapon": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 0,
+              "useSpriteFrame": 4,
+              "posOffset": {
+                "x": 0,
+                "y": 1
+              }
+            },
+            {
+              "keyframe": 10,
+              "useSpriteFrame": 4,
+              "posOffset": {
+                "y": 0,
+                "x": -1
+              }
+            },
+            {
+              "keyframe": 20,
+              "useSpriteFrame": 4,
+              "posOffset": {
+                "x": -2,
+                "y": -1
+              }
+            },
+            {
+              "keyframe": 30,
+              "useSpriteFrame": 4,
+              "posOffset": {
+                "x": -1,
+                "y": 0
+              }
+            }
+          ]
+        }
+      },
+      "weapon": {
+        "default": {
+          "sets": []
+        }
+      },
+      "capeFront": {
+        "default": {
+          "sets": []
+        }
+      },
+      "helmet": {
+        "default": {
+          "sets": []
+        }
+      },
+      "face": {
+        "default": {
+          "sets": []
+        }
+      },
+      "head": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 0,
+              "useSpriteFrame": 0,
+              "texture": "/default.png",
+              "posOffset": {
+                "y": 0
+              }
+            },
+            {
+              "keyframe": 20,
+              "useSpriteFrame": 1,
+              "texture": "/default.png",
+              "posOffset": {
+                "x": -1,
+                "y": 0
+              }
+            }
+          ],
+          "texture": "/default.png",
+          "posOffset": {
+            "y": 0
+          }
+        }
+      },
+      "chest": {
+        "default": {
+          "sets": []
+        }
+      },
+      "body": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 0,
+              "useSpriteFrame": 0,
+              "texture": "/default.png",
+              "posOffset": {
+                "y": 0
+              }
+            },
+            {
+              "keyframe": 10,
+              "useSpriteFrame": 1,
+              "texture": "/default.png"
+            },
+            {
+              "keyframe": 20,
+              "useSpriteFrame": 2,
+              "texture": "/default.png",
+              "posOffset": {
+                "y": 0
+              }
+            },
+            {
+              "keyframe": 30,
+              "useSpriteFrame": 3,
+              "texture": "/default.png"
+            }
+          ],
+          "texture": "/default.png"
+        }
+      },
+      "pants": {
+        "default": {
+          "sets": []
+        }
+      },
+      "legs": {
+        "default": {
+          "sets": [
+            {
+              "keyframe": 0,
+              "useSpriteFrame": 2,
+              "texture": "/default.png",
+              "posOffset": {
+                "y": 0
+              }
+            },
+            {
+              "keyframe": 10,
+              "useSpriteFrame": 1,
+              "texture": "/default.png"
+            },
+            {
+              "keyframe": 20,
+              "useSpriteFrame": 2,
+              "texture": "/default.png",
+              "posOffset": {
+                "y": 0
+              }
+            },
+            {
+              "keyframe": 30,
+              "useSpriteFrame": 3,
+              "texture": "/default.png"
+            }
+          ],
+          "texture": "/default.png"
+        }
+      },
+      "capeBack": {
+        "default": {
+          "sets": []
         }
       }
     }
