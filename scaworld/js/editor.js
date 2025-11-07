@@ -60,7 +60,8 @@ ddlAnimations.onchange = function () {
     if (targetAnimation == null) return;
     if (targetUser) targetUser.components.sprite.animation = ddlAnimations.value;
     inputAnimationDuration.value = targetAnimation.duration.toString();
-    htmlPartsData.innerHTML = characterAnimator.getCharacterParts().reverse().map(x => {
+    const characterPartsName = characterAnimator.getCharacterParts().reverse();
+    htmlPartsData.innerHTML = characterPartsName.map(x => {
         if (!targetAnimation) targetAnimation = { duration: 0, parts: {} };
         if (!targetAnimation.parts[x]) targetAnimation.parts[x] = { default: { sets: [] } }
 
@@ -68,51 +69,98 @@ ddlAnimations.onchange = function () {
         const userPart = targetUser?.components.sprite.parts[x] ?? { texture: "" };
         const spriteInfo = charAnimatior.spritesData[userPart.texture ?? ""] ?? {};
 
+        /**
+         * @param {string} classname 
+         * @param {Array<Array<string>|string>} valueString 
+         * @param {string | undefined} current
+         * @param {string} [align] 
+         * @returns {string}
+         */
+        const generateDDL = (classname, valueString, current, align = "") => {
+            return `
+            <select class="${classname}" ${align}>
+            ${valueString.map(x => {
+                if (Array.isArray(x)) return `<option value=${x[0]} ${current == x[0] ? "selected" : ""}>${x[1]}</option>`;
+                return `<option value=${x} ${current == x ? "selected" : ""}>${x}</option>`;
+            }).join('')}
+
+            </select> `
+        }
+
+        /** @param {string} name @param {import('./characterAnimator.js').AnimationPartData} animationDataPart @returns {string} @param {Array<number> | null} exceptionTree*/
+        const generateMenu = (name, animationDataPart, exceptionTree) => {
+
+            return `
+<ul class="set-data" data-animation="${x}" data-name="${name}" data-exception="${exceptionTree?.join('.') ?? ""}">
+    <li>Texture: ${spriteInfo.multiParts ? generateDDL("ddl-skin-part", Object.getOwnPropertyNames(spriteInfo.multiParts), animationDataPart.texture) : animationDataPart.texture ?? ""}</li>
+    <li>Pos offset: <br/>
+        x: <input type="number" class="main-pos-offset-x" value="${animationDataPart.posOffset?.x ?? "0"}" /> 
+        y: <input type="number" class="main-pos-offset-y" value="${animationDataPart.posOffset?.y ?? "0"}" />
+    </li>
+    <li>Sets: <button type="button" class="add-set">Add Set</button>
+        <ul>
+            ${animationDataPart.sets.map((set, i) => {
+                return `
+            <li class="per-set-data" data-index="${i}" style="margin-bottom: 10px;">
+                <button type="button" class="remove-set">Remove Set</button>
+                Keyframe: <input type="number" class="keyframe" data-index="${i}" value="${set.keyframe}" min="0" max="${targetAnimation?.duration}" />
+                <br/>
+                ${spriteInfo.multiParts ? `Replace Texture: ${generateDDL("ddl-skin-set", [["", "Preset Selected"], ...Object.getOwnPropertyNames(spriteInfo.multiParts)], set.texture)}` : ""}
+                <br/>
+                UseSpriteFrame: <input type="number" class="useSpriteFrame" data-index=${i} value=${set.useSpriteFrame ? set.useSpriteFrame + 1 : "1"} min="1" max=${spriteInfo?.multiParts && animationDataPart.texture && spriteInfo.multiParts[animationDataPart.texture] ? spriteInfo.multiParts[animationDataPart.texture].frameCount : spriteInfo.frameCount} />
+                <br/>
+                Pos offset: <br/>
+                x: <input type="number" class="posoffsetx" value="${set.posOffset?.x ?? "0"}" /> 
+                y: <input type="number" class="posoffsety" value="${set.posOffset?.y ?? "0"}" />
+            </li>`;
+            }).join('')}
+        </ul>
+    </li>
+    <li>
+        Exception: <select>${animationDataPart.exceptions ? animationDataPart.exceptions.map((x, i) => `<option value="${i}">${Object.getOwnPropertyNames(x.keys).map(y => `${y}`).join('::')}</option>`).join('') : ""}</select> 
+        <button type="button" class="btn-new-exception">Nova Exceção</button>
+        <br/>
+        ${animationDataPart.exceptions?.map((excp, i) => {
+                const newExceptionTree = [...(exceptionTree ?? []), i];
+                const exceptionKeys = Object.getOwnPropertyNames(excp.keys);
+                return `
+                <div class="animation-exception" data-exception="${i}" style="border: 1px solid grey;">
+                    <button type="button" class="btn-remove-exception">Remover Exceção</button>
+                    <span>Keys <button type="button" class="btn-new-exception-key">Nova Key</button>
+                    <ul>
+                        ${exceptionKeys.map(key => {
+                    return `
+                    <li class="exception-key-data" data-key="${key}">
+                        ${generateDDL("ddl-exception-key", ["", ...characterPartsName.filter(partname => !exceptionKeys.includes(partname) || partname == key)], key, `data-last-selected="${key}"`)}
+                        <button class="add-exception-key-value">Add</button>
+                        <ul>
+                            ${excp.keys[key].map(s => `
+                            <li>
+                            ${generateDDL("ddl-exception-key-value", ["", ...Object.getOwnPropertyNames(charAnimatior.getSpritesData()).filter(spritename => !excp.keys[key].includes(spritename) || spritename == s)], s, `data-last-selected="${s}"`)}
+                            </li>`).join('')}
+                        </ul>
+                    </li>`
+                }).join('')}</span> 
+                    </ul>
+                    <br/>
+                    <span>Replace: ${excp.replaceParent}</span>
+                    ${generateMenu(name, excp.part, newExceptionTree)}
+                </div>
+                `;
+            }).join('')}
+    </li> 
+</ul>
+            `;
+        };
 
         if (!p || !userPart || !spriteInfo) return '';
         return `
-<div style="padding-left: 10px;margin-bottom: 10px;border-bottom: 1px solid;padding-bottom: 5px;">
+            <div style="padding-left: 10px;margin-bottom: 10px;border-bottom: 1px solid;padding-bottom: 5px;" >
     <label style="font-weight: bolder;">${x} : <select class="ddl-user-texture"><option value=""></option>${Object.getOwnPropertyNames(charAnimatior.spritesData).map(texName => { return `<option ${texName == userPart.texture ? "selected" : ""} >${texName}</option>`; }).join('')}</select></label> 
     <br/>
-    ${Object.getOwnPropertyNames(p).map(presetName => {
-            return `
-            ${presetName}: 
-    <ul class="set-data" data-animation="${x}" data-name="${presetName}">
-        <li>Texture: ${spriteInfo.multiParts ? `<select class="ddl-skin-part">${Object.getOwnPropertyNames(spriteInfo.multiParts).map(spritePartName => {
-                return `<option ${spritePartName == p[presetName].texture ? "selected" : ""} value="${spritePartName}" >${spritePartName}</option>`;
-            }).join('')}</select>` : p[presetName].texture ?? ""}</li>
-        <li>Pos offset: x: <input type="number" class="main-pos-offset-x" value="${p[presetName].posOffset?.x ?? "0"}" /> y: <input type="number" class="main-pos-offset-y" value="${p[presetName].posOffset?.y ?? "0"}" /></li>
-        <li>Sets: <button type="button" class="add-set">Add Set</button>
-            <ul>
-                ${p[presetName].sets.map((set, i) => {
-                return `
-                <li class="per-set-data" data-index="${i}" style="margin-bottom: 10px;">
-                    <button type="button" class="remove-set">Remove Set</button>
-                    Keyframe: <input type="number" class="keyframe" data-index="${i}" value="${set.keyframe}" min="0" max="${targetAnimation?.duration}" />
-                    <br/>
-                    ${spriteInfo.multiParts ? `Replace Texture: 
-                        <select class="ddl-skin-set">
-                            <option value="">Preset Selected</option>
-                            ${Object.getOwnPropertyNames(spriteInfo.multiParts).map(spritePartName => {
-                    return `<option ${spritePartName == set.texture ? "selected" : ""} value="${spritePartName}" >${spritePartName}</option>`;
-                }).join('')}
-                        </select>` : ""}
-                    <br/>
-                    UseSpriteFrame: <input type="number" class="useSpriteFrame" data-index=${i} value=${set.useSpriteFrame ? set.useSpriteFrame + 1 : "1"} min="1" max=${spriteInfo?.multiParts && p[presetName].texture && spriteInfo.multiParts[p[presetName].texture] ? spriteInfo.multiParts[p[presetName].texture].frameCount : spriteInfo.frameCount} />
-                    <br/>
-                    Pos offset: x: <input type="number" class="posoffsetx" value="${set.posOffset?.x ?? "0"}" /> y: <input type="number" class="posoffsety" value="${set.posOffset?.y ?? "0"}" />
-                </li>`;
-            }).join('')}
-            </ul>
-        </li>
-    </ul>
-        `;
-        }).join('')}
-    
-    <!--<hr/>
-    ${JSON.stringify(p)}}
-    <hr/>-->
-</div>`;
+    ${Object.getOwnPropertyNames(p).map(presetName => { return generateMenu(presetName, p[presetName], null); }).join('')
+            }
+</div > `;
     }).join('');
 
     /**
@@ -131,27 +179,25 @@ ddlAnimations.onchange = function () {
         }
     }
 
-    on('.add-set', 'onclick', function (/** @type {Event} */e) {
-        const target = /** @type {HTMLInputElement} */(e.target)
-        if (!target) return;
-        const dataset = /** @type {HTMLElement} */(target.closest('.set-data'))?.dataset;
-        if (!dataset || !dataset.animation || !dataset.name) return;
-        targetAnimation?.parts[dataset.animation][dataset.name].sets.push({
-            keyframe: 0,
-        });
-        ddlAnimations.dispatchEvent(new Event('change'));
-    });
-
-    on('.remove-set', 'onclick', function (/** @type {Event} */e) {
-        const target = /** @type {HTMLInputElement} */(e.target)
-        if (!target) return;
-        const dataset = /** @type {HTMLElement} */(target.closest('.set-data'))?.dataset;
-        const persetDataset = /** @type {HTMLElement} */(target.closest('.per-set-data'))?.dataset;
-
-        if (!dataset || !dataset.animation || !dataset.name || !persetDataset || !persetDataset.index || !targetAnimation) return;
-        targetAnimation.parts[dataset.animation][dataset.name].sets.splice(parseInt(persetDataset.index), 1);
-        ddlAnimations.dispatchEvent(new Event('change'));
-    });
+    /** @param {HTMLInputElement | undefined} e @returns {null|import('./characterAnimator.js').AnimationPartData} */
+    const getSetOf = (e) => {
+        if (!e) return null;
+        const dataset = /** @type {HTMLElement} */(e.closest('.set-data'))?.dataset;
+        if (!dataset || !targetAnimation || !dataset.animation || !dataset.name) return null;
+        let set = targetAnimation.parts[dataset.animation][dataset.name];
+        let exceptionlist = dataset.exception;
+        //if (!exceptionlist || exceptionlist == "") {
+        //    exceptionlist = /** @type {HTMLElement} */(e.closest('.animation-exception'))?.dataset?.exception;
+        //}
+        if (exceptionlist) {
+            const excps = exceptionlist.split('.');
+            excps.forEach(excp => {
+                if (excp == "" || !set.exceptions) return;
+                set = set.exceptions[parseInt(excp)].part;
+            });
+        }
+        return set;
+    }
 
     /**
      * @param {HTMLInputElement} htmlElement 
@@ -159,24 +205,144 @@ ddlAnimations.onchange = function () {
      * @param {*} value
      */
     const changesetdata = (htmlElement, attribute, value) => {
-        const dataset = /** @type {HTMLElement} */(htmlElement.closest('.set-data'))?.dataset;
         const persetDataset = /** @type {HTMLElement} */(htmlElement.closest('.per-set-data'))?.dataset;
-        if (!dataset.name || !dataset.animation || !persetDataset.index) return;
-        if (targetAnimation?.parts[dataset.animation][dataset.name]?.sets == undefined) return;
-        const part = targetAnimation.parts[dataset.animation][dataset.name];
+        if (!persetDataset.index) return;
+        const set = getSetOf(htmlElement);
         if (Array.isArray(attribute)) {
             // @ts-ignore
-            if (!part.sets[parseInt(persetDataset.index)][attribute[0]])
+            if (!set.sets[parseInt(persetDataset.index)][attribute[0]])
                 // @ts-ignore
-                part.sets[parseInt(persetDataset.index)][attribute[0]] = {};
+                set.sets[parseInt(persetDataset.index)][attribute[0]] = {};
             // @ts-ignore
-            part.sets[parseInt(persetDataset.index)][attribute[0]][attribute[1]] = parseInt(htmlElement.value);
+            set.sets[parseInt(persetDataset.index)][attribute[0]][attribute[1]] = parseInt(htmlElement.value);
         }
         else
             // @ts-ignore
-            part.sets[parseInt(persetDataset.index)][attribute] = value;
+            set.sets[parseInt(persetDataset.index)][attribute] = value;
     }
 
+    on('.btn-new-exception-key', 'onclick', function (/** @type {Event} */e) {
+        const target = /** @type {HTMLInputElement} */(e.target);
+        let set = getSetOf(/** @type {HTMLInputElement} */(e.target));
+        if (set == null) return;
+        let exception = /** @type {HTMLElement} */(target.closest('.animation-exception'))?.dataset?.exception;
+        /** @type {import('./characterAnimator.js').ExceptionsData|null} */
+        if (exception && set.exceptions) {
+            const dataset = /** @type {HTMLElement} */(target.closest('.set-data'))?.dataset;
+            let animation = dataset?.animation;
+            let i = 0;
+            const charAnimations = characterAnimator.getCharacterParts();
+            do {
+                if (!animation) animation = charAnimations[i];
+                if (set.exceptions[parseInt(exception)].keys[animation]) {
+                    i++;
+                    animation = undefined;
+                    continue;
+                }
+                set.exceptions[parseInt(exception)].keys[animation] = [];
+                break;
+            } while (i < charAnimations.length)
+        }
+        ddlAnimations.dispatchEvent(new Event('change'));
+    });
+
+    on('.btn-remove-exception', 'onclick', function (/** @type {Event} */e) {
+        const target = /** @type {HTMLInputElement} */(e.target);
+        let set = getSetOf(/** @type {HTMLInputElement} */(e.target));
+        if (set == null) return;
+        let exception = /** @type {HTMLElement} */(target.closest('.animation-exception'))?.dataset?.exception;
+        if (exception && set.exceptions) {
+            set.exceptions.splice(parseInt(exception), 1);
+        }
+        ddlAnimations.dispatchEvent(new Event('change'));
+    });
+
+    on('.btn-new-exception', 'onclick', function (/** @type {Event} */e) {
+        const set = getSetOf(/** @type {HTMLInputElement} */(e.target));
+        if (!set) return;
+        if (!set.exceptions)
+            set.exceptions = [];
+        set.exceptions.push({
+            keys: {},
+            replaceParent: false,
+            part: {
+                sets: []
+            }
+        });
+        ddlAnimations.dispatchEvent(new Event('change'));
+    });
+
+    on('.add-exception-key-value', 'onclick', function (/** @type {Event} */e) {
+        const target = /** @type {HTMLInputElement} */(e.target);
+        let set = getSetOf(/** @type {HTMLInputElement} */(e.target));
+        if (set == null) return;
+        let exception = /** @type {HTMLElement} */(target.closest('.animation-exception'))?.dataset?.exception;
+        let exceptionKey = /** @type {HTMLElement} */ (target.closest('.exception-key-data'))?.dataset?.key;
+        if (exception && set.exceptions && exceptionKey) {
+            let i = 0;
+            let spriteName = null;
+            const sprites = Object.getOwnPropertyNames(charAnimatior.getSpritesData());
+            const values = set.exceptions[parseInt(exception)].keys[exceptionKey];
+            do {
+                if (!spriteName) spriteName = sprites[i];
+                if (values.includes(spriteName)) {
+                    i++;
+                    spriteName = null;
+                    continue;
+                }
+                values.push(spriteName);
+                break;
+            } while (i < sprites.length)
+        }
+        ddlAnimations.dispatchEvent(new Event('change'));
+    });
+
+    on('.ddl-exception-key', 'onchange', function (/** @type {Event} */e) {
+        const target = /** @type {HTMLInputElement} */(e.target);
+        let set = getSetOf(/** @type {HTMLInputElement} */(e.target));
+        if (set == null) return;
+        let exception = /** @type {HTMLElement} */(target.closest('.animation-exception'))?.dataset?.exception;
+        let lastSelected = target.dataset.lastSelected;
+        if (!exception || !lastSelected || !set.exceptions) return;
+        if (target.value != "") set.exceptions[parseInt(exception)].keys[target.value] = set.exceptions[parseInt(exception)].keys[lastSelected];
+        delete set.exceptions[parseInt(exception)].keys[lastSelected];
+        ddlAnimations.dispatchEvent(new Event('change'));
+    });
+
+    on('.ddl-exception-key-value', 'onchange', function (/** @type {Event} */e) {
+        const target = /** @type {HTMLInputElement} */(e.target);
+        let set = getSetOf(/** @type {HTMLInputElement} */(e.target));
+        if (set == null) return;
+        let exception = /** @type {HTMLElement} */(target.closest('.animation-exception'))?.dataset?.exception;
+        let exceptionKey = /** @type {HTMLElement} */ (target.closest('.exception-key-data'))?.dataset?.key;
+        let lastSelected = target.dataset.lastSelected;
+        if (!exception || !lastSelected || !set.exceptions || !exceptionKey) return;
+        const list = set.exceptions[parseInt(exception)].keys[exceptionKey];
+        const item = list.find(x => x == lastSelected);
+        if (item) list.splice(list.indexOf(item), 1);
+        if (target.value != "") list.push(target.value);
+        ddlAnimations.dispatchEvent(new Event('change'));
+    });
+
+    on('.add-set', 'onclick', function (/** @type {Event} */e) {
+        const set = getSetOf(/** @type {HTMLInputElement} */(e.target));
+        if (!set) return;
+        set.sets.push({
+            keyframe: 0,
+            useSpriteFrame: 0,
+        });
+        ddlAnimations.dispatchEvent(new Event('change'));
+    });
+
+    on('.remove-set', 'onclick', function (/** @type {Event} */e) {
+        const target = /** @type {HTMLInputElement} */(e.target);
+        const set = getSetOf(target);
+        const persetDataset = /** @type {HTMLElement} */(target.closest('.per-set-data'))?.dataset;
+        if (!set || !persetDataset || !persetDataset.index) return;
+
+        set.sets.splice(parseInt(persetDataset.index), 1);
+        ddlAnimations.dispatchEvent(new Event('change'));
+    });
 
     on(".keyframe", "onchange", (/** @type {Event} */e) => {
         const target = /** @type {HTMLInputElement} */(e.target)
@@ -204,35 +370,26 @@ ddlAnimations.onchange = function () {
 
     on(".main-pos-offset-x", "onchange", (/** @type {Event} */e) => {
         const target = /** @type {HTMLInputElement} */(e.target)
-        if (!target) return;
-        const dataset = /** @type {HTMLElement} */(target.closest('.set-data'))?.dataset;
-        if (!dataset.name || !dataset.animation) return;
-        if (targetAnimation?.parts[dataset.animation][dataset.name]?.sets == undefined) return;
-        const part = targetAnimation.parts[dataset.animation][dataset.name];
+        const part = getSetOf(target);// targetAnimation.parts[dataset.animation][dataset.name];
+        if (!part) return;
         if (!part.posOffset) part.posOffset = {};
         part.posOffset.x = parseInt(target.value);
     });
 
     on(".main-pos-offset-y", "onchange", (/** @type {Event} */e) => {
         const target = /** @type {HTMLInputElement} */(e.target)
-        if (!target) return;
-        const dataset = /** @type {HTMLElement} */(target.closest('.set-data'))?.dataset;
-        if (!dataset.name || !dataset.animation) return;
-        if (targetAnimation?.parts[dataset.animation][dataset.name]?.sets == undefined) return;
-        const part = targetAnimation.parts[dataset.animation][dataset.name];
+        const part = getSetOf(target);// targetAnimation.parts[dataset.animation][dataset.name];
+        if (!part) return;
         if (!part.posOffset) part.posOffset = {};
         part.posOffset.y = parseInt(target.value);
     });
 
     on(".ddl-skin-part", "onchange", (/** @type {Event} */e) => {
         const target = /** @type {HTMLInputElement} */(e.target)
-        if (!target) return;
-
-        const dataset = /** @type {HTMLElement} */(target.closest('.set-data'))?.dataset;
-        if (!dataset.name || !dataset.animation) return;
-        const skin = targetAnimation?.parts[dataset.animation][dataset.name];
-        if (skin == undefined) return;
-        skin.texture = target.value;
+        const part = getSetOf(target);
+        if (!part) return;
+        if (part == undefined) return;
+        part.texture = target.value;
     });
 
     on(".ddl-skin-set", "onchange", (/** @type {Event} */e) => {
@@ -240,7 +397,6 @@ ddlAnimations.onchange = function () {
         if (!target) return;
         changesetdata(target, "texture", target.value);
     });
-
 
     on(".ddl-user-texture", "onchange", (/** @type {Event} */e) => {
         const target = /** @type {HTMLInputElement} */(e.target)
@@ -281,7 +437,7 @@ function editorProcessUserAnimation() {
 }
 
 function updateDdlAnimations() {
-    ddlAnimations.innerHTML = Object.getOwnPropertyNames(charAnimatior.animations).map(x => `<option value="${x}">${x}</option>`).join('');
+    ddlAnimations.innerHTML = Object.getOwnPropertyNames(charAnimatior.animations).map(x => `<option value="${x}" > ${x}</option> `).join('');
 }
 
 /**
@@ -321,11 +477,12 @@ export default {
         updateDdlAnimations();
         ddlAnimations.dispatchEvent(new Event('change'));
         const htmlMain = /** @type {HTMLElement} */ (document.querySelector(".html-main"));
-        htmlMain.style.height = "200px";
-        htmlMain.style.width = "500px";
+        htmlMain.style.height = "400px";
+        htmlMain.style.width = "275px";
         htmlMain.style.position = "sticky";
         htmlMain.style.float = "right";
         htmlMain.style.top = "0";
+        htmlMain.style.overflowX = "hidden";
     },
     running: () => running,
 };
