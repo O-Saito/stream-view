@@ -6,7 +6,7 @@
         "default": {
           "sets": [],
           "posOffset": {
-            "y": 15
+            "y": 12
           }
         }
       },
@@ -50,7 +50,29 @@
       },
       "weapon": {
         "default": {
-          "sets": []
+          "sets": [],
+          "exceptions": [
+            {
+              "keys": {
+                "weapon": [
+                  "/char/props/equip/arco/default.png"
+                ]
+              },
+              "replaceParent": false,
+              "part": {
+                "sets": [
+                  {
+                    "keyframe": 0,
+                    "useSpriteFrame": 4,
+                    "posOffset": {
+                      "y": 1,
+                      "x": -1
+                    }
+                  }
+                ]
+              }
+            }
+          ]
         }
       },
       "capeFront": {
@@ -190,7 +212,33 @@
           "texture": "/attack.png",
           "posOffset": {
             "x": 16
-          }
+          },
+          "exceptions": [
+            {
+              "keys": {
+                "weapon": [
+                  "/char/props/equip/arco/default.png"
+                ]
+              },
+              "replaceParent": false,
+              "part": {
+                "sets": [
+                  {
+                    "keyframe": 0,
+                    "useSpriteFrame": 2
+                  },
+                  {
+                    "keyframe": 20,
+                    "useSpriteFrame": 1,
+                    "posOffset": {
+                      "x": 9,
+                      "y": -5
+                    }
+                  }
+                ]
+              }
+            }
+          ]
         }
       },
       "capeFront": {
