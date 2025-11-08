@@ -20,6 +20,24 @@
     "/char/body/skeleton/legs/def.png",
     "/char/body/skeleton/legs/bran.png",
 
+    "/char/body/panntchan/head/bran.png",
+    "/char/body/panntchan/head/def.png",
+    "/char/body/panntchan/head/default.png",
+    "/char/body/panntchan/head/moving.png",
+    "/char/body/panntchan/head/jump.png",
+
+    "/char/body/panntchan/body/bran.png",
+    "/char/body/panntchan/body/def.png",
+    "/char/body/panntchan/body/default.png",
+    "/char/body/panntchan/body/jump.png",
+    "/char/body/panntchan/body/moving.png",
+
+    "/char/body/panntchan/legs/bran.png",
+    "/char/body/panntchan/legs/def.png",
+    "/char/body/panntchan/legs/default.png",
+    "/char/body/panntchan/legs/moving.png",
+    "/char/body/panntchan/legs/jump.png",
+
     "/char/body/human/head/default.png",
     "/char/body/human/body/default.png",
     "/char/body/human/legs/default.png",
@@ -30,6 +48,13 @@
     "/char/props/equip/espada/def.png",
     "/char/props/equip/espada/drop.png",
 
+    "/char/props/equip/espada_grande/attack.png",
+    "/char/props/equip/espada_grande/drop.png",
+    "/char/props/equip/espada_grande/jump.png",
+
+    "/char/props/equip/escudo_grande/def.png",
+    "/char/props/equip/escudo_grande/drop.png",
+
     "/char/props/equip/escudo_madeira/default.png",
     "/char/props/equip/escudo_madeira/attack.png",
     "/char/props/equip/escudo_madeira/jump.png",
@@ -37,6 +62,7 @@
     "/char/props/equip/escudo_madeira/drop.png",
 
     "/char/props/equip/arco/default.png",
+    "/char/props/equip/novo_arco/default.png",
 
     "/char/props/helmet/blackpower.png",
     "/char/props/helmet/bruxo.png",
