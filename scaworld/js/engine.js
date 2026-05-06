@@ -9,6 +9,34 @@ import luz from './shader/luz.js';
 import atlasManager from './atlasManager.js';
 
 /**
+ * @typedef {Object} Program
+ * @property {WebGLProgram} program
+ * @property {WebGLShader} vertexShader
+ * @property {WebGLShader} fragmentShader
+ * @property {{u:Object.<string, *>, a: Object.<string, *>}} locals
+ * @property {Float32Array} transformData
+ * @property {Float32Array} data
+ * @property {function(WebGLProgram, Object): void} [addToTransform]
+ * @property {function(Object, Object): void} [updateTransformPart]
+ * @property {function(Object): void} [removeTransformPart]
+ * @property {WebGLVertexArrayObject} [vao]
+ * @property {WebGLBuffer} [transformBuffer]
+ * @property {WebGLBuffer|null} [dataBuffer]
+ * @property {WebGLBuffer} [ebo]
+ * @property {WebGLBuffer} [vbo]
+ * @property {WebGLBuffer} [instanceVBO]
+ * @property {number} [instanceCount]
+ * @property {number} [vertexCount]
+ * @property {number} [indexCount]
+ * @property {number} [textureIndex]
+ * @property {GLenum} [textureType]
+ * @property {WebGLTexture} [texture]
+ * @property {WebGLBuffer} [pbo]
+ * @property {number} [width]
+ * @property {number} [height]
+ * @property {number} [imageHeight]
+ * @property {number} [layerCount]
+ * @property {Uint8Array} [imgData]
  * 
  * @typedef {Object} PartData
  * @property {string|null} Part.texture
@@ -19,14 +47,16 @@ import atlasManager from './atlasManager.js';
  * @property {Object} [Part.logicOffset]
  * @property {number} Part.logicOffset.x
  * @property {number} Part.logicOffset.y
+ * @property {Position} [Part.rotationPivot]
  * 
  * @typedef {Object.<string, PartData>} Parts
  * 
- * @typedef {Object} CharShaderData
+ * @typedef {Object} ElementShaderData
  * @property {number} index
  * @property {number} depth
  * @property {number} currentFrame
  * @property {boolean} isFlipedX
+ * @property {boolean} [isFlipedY]
  * @property {Position} position
  * @property {Size} size
  * @property {Parts} parts
@@ -36,6 +66,9 @@ import atlasManager from './atlasManager.js';
  * @property {number} replaceColor.r
  * @property {number} replaceColor.g
  * @property {number} replaceColor.b
+ * 
+ * @property {number} [maxFrames]
+ * 
  */
 
 export const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('gameCanvas'));
@@ -49,24 +82,30 @@ gl.enable(gl.DEPTH_TEST);
 gl.depthFunc(gl.LEQUAL);
 //gl.enable(gl.FRAMEBUFFER_SRGB);
 
-const propsDefinition = atlasManager.propsDefinition;
-const dyPropsDefinition = atlasManager.dynamicPropDefinition;
-
 const countOfLight = 10;
 //const countOfCharProps = 1;
 const countOfCharProps = 11;
 const options = {
     charDepth: 0.10,
     currentCharDepth: 0,
-    charNameOffset: 14,
+    charNameOffset: 9,
 };
+
+const templateElementData = [
+    0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+];
 
 /**
  * @type {Array<any>}
  */
 const uiDraws = [];
 
-const globalLight = { x: 1, y: 0, z: 0, run: true };
+const globalLight = { x: 1, y: 1, z: 1, run: true };
 
 let lastLightIndex = 0;
 /** @type {*} */
@@ -82,8 +121,6 @@ let textureIndex = 0;
 let fpsInterval = 1000 / targetFramerate + 1;
 let then = Date.now();
 let now = null, elapsed = null;
-/** @type {*} */
-export const programData = {};
 
 /**
  * @param {number} newTarget 
@@ -91,6 +128,13 @@ export const programData = {};
 const changeTargetFramerate = (newTarget) => {
     targetFramerate = newTarget;
     fpsInterval = 1000 / targetFramerate + 1;
+}
+
+/**
+ * @returns {[number, number]}
+ */
+const getTargetFramerate = () => {
+    return [targetFramerate, fpsInterval];
 }
 
 /**
@@ -122,7 +166,7 @@ function textFade(text, { position, framesToFade, depth = 999, onFrameMoveDirect
 }
 
 /**
- * @param {*} param0 
+ * @param {{ depth: number, f: Function }} param0 
  */
 export const requestUIDraw = ({ depth, f }) => {
     if (!depth) depth = 999;
@@ -131,9 +175,9 @@ export const requestUIDraw = ({ depth, f }) => {
 }
 
 /**
- * @param {*} width 
- * @param {*} height 
- * @param {*} floating 
+ * @param {number} width 
+ * @param {number} height 
+ * @param {boolean} floating 
  */
 export const resizeCanvas = (width, height, floating) => {
     canvas.width = width;
@@ -162,9 +206,11 @@ export const resizeCanvas = (width, height, floating) => {
     uiCanvas.style.zoom = "1";
     uiCanvas.style.imageRendering = 'auto';
     //uiCanvas.style.imageRendering = 'pixelated';
-    // uiCanvas.style.transform = 'scale(1)';
-    // uiCanvas.style.transformOrigin = '0 0';
-    // uiCanvas.style.willChange = 'transform';
+    uiCanvas.style.transform = 'scale(1)';
+    uiCanvas.style.transformOrigin = '0 0';
+    uiCanvas.style.willChange = 'transform';
+    uiCanvas.style.contain = 'strict';
+    //uiCanvas.style.willChange = 'transform';
     // uiCanvas.style.contain = 'strict';
     if (floating) uiCanvas.style.top = `-${height + 1}px`;
     document.body.style.transform = 'translateZ(0)';
@@ -178,7 +224,7 @@ export const resizeCanvas = (width, height, floating) => {
 
 /**
  * @param {*} param0 
- * @returns 
+ * @returns {Program} 
  */
 export const setupProgram = ({ vertexSource, fragmentSource, getUniforms, getAttributes, setup, addToTransform, updateTransformPart, removeTransformPart }) => {
 
@@ -226,6 +272,8 @@ export const setupProgram = ({ vertexSource, fragmentSource, getUniforms, getAtt
         addToTransform,
         updateTransformPart,
         removeTransformPart,
+        transformData: new Float32Array([]),
+        data: new Float32Array([]),
     }
 };
 
@@ -244,9 +292,9 @@ export const vertexAttribPointer = (pointers) => {
 };
 
 /**
- * @param {*} gl 
- * @param {*} type 
- * @returns 
+ * @param {WebGL2RenderingContext} gl 
+ * @param {number} type 
+ * @returns {[WebGLTexture, number]}
  */
 export const createTexture = (gl, type) => {
     const index = textureIndex;
@@ -339,142 +387,482 @@ export const update2DArrayImage = ({ gl, textureType, texture, textureIndex, wid
     return pbo;
 }
 
-programData.char = setupProgram({
-    vertexSource: sprites.vertexShaderSource,
-    fragmentSource: sprites.fragmentShaderSource,
-    /**
-     * @param {*} program 
-     * @param {*} locals 
-     */
-    setup: (program, locals) => {
-    },
-    /**
-     * @param {*} p 
-     * @returns 
-     */
-    getUniforms: (p) => { return sprites.getUniforms(gl, p); },
-    /**
-     * @param {*} p 
-     * @returns 
-     */
-    getAttributes: (p) => { return sprites.getAttributes(gl, p); },
-    /**
-     * @param {*} o 
-     * @param {*} countOfChars 
-     * @returns 
-     */
-    addToTransform: (o, countOfChars) => {
-        const dataLength = 17;
-        const dataSize = dataLength * countOfCharProps;
-        const pd = programData.char;
-        if (dataSize * countOfChars <= pd.transformData.length) return;
-        gl.useProgram(pd.program);
-        gl.bindVertexArray(pd.vao1);
-        //gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bindBuffer(gl.ARRAY_BUFFER, pd.transformBuffer);
-        // gl.drawArrays(gl.POINTS, 0, 4);
 
-        const arr = [];
-
-        for (let i = 0; i < countOfCharProps; i++) {
-            arr.push(1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,);
-        }
-
-        pd.transformData = new Float32Array([
-            ...pd.transformData,
-            ...arr
-        ]);
-        gl.bufferData(gl.ARRAY_BUFFER, pd.transformData, gl.DYNAMIC_DRAW);
-        gl.bindVertexArray(null);
-    },
-    /**
-     * @param {CharShaderData} char 
-     */
-    updateTransformPart: (char) => {
-        const charDefinitions = atlasManager.charDefinitions;
-        const dataLength = 17;
-        const dataSize = dataLength * countOfCharProps;
-        const pd = programData['char'];
-
-        let d = char.depth == options.charDepth ? options.currentCharDepth : char.depth;
-        let skip = 0;
+/** @type {Object.<string, Program>} */
+export const programData = {
+    char: setupProgram({
+        vertexSource: sprites.vertexShaderSource,
+        fragmentSource: sprites.fragmentShaderSource,
         /**
-         * @param {number} i 
-         * @param {string} type 
+         * @param {*} program 
+         * @param {*} locals 
          */
-        const setData = (i, type) => {
-            const set = char.parts[type];
-            i = i + skip;
-            const pos = { x: char.position.x, y: char.position.y };
-            const texCoordOffset = { x: -32, y: -32 };
-            let rotation = 0;
-            let animationLayer = 0;
+        setup: (program, locals) => {
+        },
+        /**
+         * @param {*} p 
+         * @returns 
+         */
+        getUniforms: (p) => { return sprites.getUniforms(gl, p); },
+        /**
+         * @param {*} p 
+         * @returns 
+         */
+        getAttributes: (p) => { return sprites.getAttributes(gl, p); },
+        /**
+         * @param {number} countOfChars 
+         * @returns 
+         */
+        addToTransform: (countOfChars) => {
+            const pd = programData.char;
+            if (!pd.vao || !pd.transformBuffer) return;
+            const dataLength = 19;
+            const dataSize = dataLength * countOfCharProps;
+            if (dataSize * countOfChars <= pd.transformData.length) return;
+            gl.useProgram(pd.program);
+            gl.bindVertexArray(pd.vao);
+            //gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.bindBuffer(gl.ARRAY_BUFFER, pd.transformBuffer);
+            // gl.drawArrays(gl.POINTS, 0, 4);
 
-            if(set.texture == "") var a= 0;//console.log("Texture null");
+            const arr = [];
 
-            if (set && set.texture != "") {
-                texCoordOffset.x = 0;
-                texCoordOffset.y = 0;
-                animationLayer = set.texture == null ? 0 : charDefinitions.calcDepth(set.texture);
-                rotation = set.rotation ?? 0;
-                //const texOffset = set.texOffset;
-
-                if (set.texture == undefined || set.texture == null) {
-                    texCoordOffset.x = -char.size.width;
-                    texCoordOffset.y = -char.size.height;
-                } else {
-                    pos.x += set.posOffset.x;
-                    pos.y += set.posOffset.y;
-
-                    texCoordOffset.x = set.texOffset.x;
-                }
-
+            for (let i = 0; i < countOfCharProps; i++) {
+                arr.push(1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0);
             }
 
-            //if (Number.isNaN(animationLayer)) alert(type + " " + set.texture);
-            if (texCoordOffset.x == undefined) console.error(`${texCoordOffset.x} ${set.texture}`);
-            if (texCoordOffset.y == undefined) console.error(`${texCoordOffset.y} ${set.texture}`);
-            //if (texCoordOffset.x != -32)
-                //console.log(texCoordOffset.x, texCoordOffset.y, animationLayer);
+            pd.transformData = new Float32Array([
+                ...pd.transformData,
+                ...arr
+            ]);
+            gl.bufferData(gl.ARRAY_BUFFER, pd.transformData, gl.DYNAMIC_DRAW);
+            gl.bindVertexArray(null);
+        },
+        /**
+         * @param {ElementShaderData} char 
+         */
+        updateTransformPart: (char) => {
+            const charDefinitions = atlasManager.charDefinitions;
+            const dataLength = 19;
+            const dataSize = dataLength * countOfCharProps;
+            const pd = programData.char;
 
-            if (Number.isNaN(animationLayer)) animationLayer = 0;
-            pd.transformData[i + 0] = pos.x;
-            pd.transformData[i + 1] = pos.y;
-            pd.transformData[i + 2] = texCoordOffset.x;
-            pd.transformData[i + 3] = texCoordOffset.y;
-            pd.transformData[i + 4] = animationLayer;
-            pd.transformData[i + 5] = d;
-            pd.transformData[i + 6] = char.isFlipedX ? char.size.width : 0;
-            pd.transformData[i + 7] = 0;
-            pd.transformData[i + 8] = char.size.width;
-            pd.transformData[i + 9] = char.size.height;
-            pd.transformData[i + 10] = char.localGlobalId ?? 0;
-            pd.transformData[i + 11] = char.isLightSource ? 1 : 0;
-            pd.transformData[i + 12] = rotation;
-            pd.transformData[i + 13] = char.replaceColor ? char.replaceColor.r / 255 : 0.0;
-            pd.transformData[i + 14] = char.replaceColor ? char.replaceColor.g / 255 : 0.0;
-            pd.transformData[i + 15] = char.replaceColor ? char.replaceColor.b / 255 : 0.0;
-            pd.transformData[i + 16] = char.replaceColor ? 1.0 : 0.0;
-            d -= 0.0001;
-            options.currentCharDepth -= 0.0001;
-            skip += dataLength;
+            let d = char.depth == options.charDepth ? options.currentCharDepth : char.depth;
+            let skip = 0;
+            /**
+             * @param {number} i 
+             * @param {string} type 
+             */
+            const setData = (i, type) => {
+                const set = char.parts[type];
+                i = i + skip;
+                const pos = { x: char.position.x, y: char.position.y };
+                const texCoordOffset = { x: -32, y: -32 };
+                let rotation = 0;
+                let rotationPivot = { x: 0, y: 0 };
+                let animationLayer = 0;
+
+                if (set.texture == "") var a = 0;//console.log("Texture null");
+
+                if (set && set.texture != "" && set.texture != null) {
+                    texCoordOffset.x = 0;
+                    texCoordOffset.y = 0;
+
+                    animationLayer = set.texture == null ? 0 : charDefinitions.calcDepth(set.texture);
+                    rotation = set.rotation ?? 0;
+                    rotationPivot.x = set.rotationPivot?.x ?? 0;
+                    rotationPivot.y = set.rotationPivot?.y ?? 0;
+                    //const texOffset = set.texOffset;
+
+                    if (set.texture == undefined || set.texture == null) {
+                        texCoordOffset.x = -char.size.width;
+                        texCoordOffset.y = -char.size.height;
+                    } else {
+                        pos.x += char.isFlipedX ? set.posOffset.x * -1 : set.posOffset.x;
+                        pos.y += set.posOffset.y;
+
+                        texCoordOffset.x = set.texOffset.x;
+                    }
+
+                    texCoordOffset.x += charDefinitions.srcs[set.texture].w;
+                }
+
+                if (texCoordOffset.x == undefined) console.error(`${texCoordOffset.x} ${set.texture}`);
+                if (texCoordOffset.y == undefined) console.error(`${texCoordOffset.y} ${set.texture}`);
+
+                if (Number.isNaN(animationLayer)) animationLayer = 0;
+                pd.transformData[i + 0] = pos.x;
+                pd.transformData[i + 1] = pos.y;
+                pd.transformData[i + 2] = texCoordOffset.x;
+                pd.transformData[i + 3] = texCoordOffset.y;
+                pd.transformData[i + 4] = animationLayer;
+                pd.transformData[i + 5] = d;
+                pd.transformData[i + 6] = char.isFlipedX ? char.size.width : 0;
+                pd.transformData[i + 7] = 0;
+                pd.transformData[i + 8] = char.size.width;
+                pd.transformData[i + 9] = char.size.height;
+                pd.transformData[i + 10] = char.localGlobalId ?? 0;
+                pd.transformData[i + 11] = char.isLightSource ? 1 : 0;
+                pd.transformData[i + 12] = rotation;
+                pd.transformData[i + 13] = char.replaceColor ? char.replaceColor.r / 255 : 0.0;
+                pd.transformData[i + 14] = char.replaceColor ? char.replaceColor.g / 255 : 0.0;
+                pd.transformData[i + 15] = char.replaceColor ? char.replaceColor.b / 255 : 0.0;
+                pd.transformData[i + 16] = char.replaceColor ? 1.0 : 0.0;
+                pd.transformData[i + 17] = rotationPivot.x;
+                pd.transformData[i + 18] = rotationPivot.y;
+                d -= 0.0001;
+                options.currentCharDepth -= 0.0001;
+                skip += dataLength;
+            }
+
+            //setData(char.index * dataSize, 'body');
+            /**/
+            setData(char.index * dataSize, 'capeBack');
+            setData(char.index * dataSize, 'legs');
+            setData(char.index * dataSize, 'pants');
+            setData(char.index * dataSize, 'body');
+            setData(char.index * dataSize, 'chest');
+            setData(char.index * dataSize, 'weapon');
+            setData(char.index * dataSize, 'head');
+            setData(char.index * dataSize, 'face');
+            setData(char.index * dataSize, 'helmet');
+            setData(char.index * dataSize, 'capeFront');
+            setData(char.index * dataSize, 'second_weapon');
         }
+    }),
+    prop: setupProgram({
+        vertexSource: sprites.vertexShaderSource,
+        fragmentSource: sprites.fragmentShaderSource,
+        /**
+         * @param {*} program 
+         * @param {*} locals 
+         */
+        setup: (program, locals) => {
+        },
+        /**
+         * @param {*} p 
+         * @returns 
+         */
+        getUniforms: (p) => { return sprites.getUniforms(gl, p); },
+        /**
+         * @param {*} p 
+         * @returns 
+         */
+        getAttributes: (p) => { return sprites.getAttributes(gl, p); },
+        /**
+         * 
+         * @param {ElementShaderData} p 
+         * @param {number} countOfProp 
+         * @returns 
+         */
+        addToTransform: (p, countOfProp) => {
+            const pd = programData.prop;
+            if (!pd.vao || !pd.transformBuffer) return;
+            if (!p.parts.default?.texture) {
 
-        //setData(char.index * dataSize, 'body');
-        /**/
-        setData(char.index * dataSize, 'capeBack');
-        setData(char.index * dataSize, 'legs');
-        setData(char.index * dataSize, 'pants');
-        setData(char.index * dataSize, 'body');
-        setData(char.index * dataSize, 'chest');
-        setData(char.index * dataSize, 'weapon');
-        setData(char.index * dataSize, 'head');
-        setData(char.index * dataSize, 'face');
-        setData(char.index * dataSize, 'helmet');
-        setData(char.index * dataSize, 'capeFront');
-        setData(char.index * dataSize, 'second_weapon');
-    }
-});
+                gl.useProgram(pd.program);
+                gl.bindVertexArray(pd.vao);
+                gl.bindBuffer(gl.ARRAY_BUFFER, pd.transformBuffer);
+
+                const data = [...templateElementData];
+
+                if (data.length * countOfProp <= pd.transformData.length) return;
+                pd.transformData = new Float32Array([
+                    ...pd.transformData, ...data
+                ]);
+                gl.bufferData(gl.ARRAY_BUFFER, pd.transformData, gl.DYNAMIC_DRAW);
+                gl.bindVertexArray(null);
+                return;
+            }
+            const propsDefinition = atlasManager.propsDefinition;
+            const texture = p.parts.default.texture;
+            const prop = propsDefinition.srcs[texture];
+
+            const size = { w: p.size.width, h: p.size.height };
+            const pos = {
+                x: p.position.x,
+                y: p.position.y,
+                w: size.w,
+                h: size.h,
+                xw: 0,
+                yh: 0
+            };
+            pos.xw = pos.x + pos.w;
+            pos.yh = pos.y + pos.h;
+
+            gl.useProgram(pd.program);
+            gl.bindVertexArray(pd.vao);
+            gl.bindBuffer(gl.ARRAY_BUFFER, pd.transformBuffer);
+
+            const tc = {
+                x: 0, y: 0,
+                w: size.w, h: size.h,
+                xw: 0, yh: 0
+            }
+            tc.xw = tc.x + tc.w;
+            tc.yh = tc.y + tc.h;
+
+            const imageLayer = propsDefinition.calcDepth(texture);
+
+            const data = [
+                0, 0, tc.x, tc.y, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+                pos.w, 0, tc.xw, tc.y, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+                0, pos.h, tc.x, tc.yh, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+                pos.w, 0, tc.xw, tc.y, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+                pos.w, pos.h, tc.xw, tc.yh, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+                0, pos.h, tc.x, tc.yh, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+            ];
+
+            if (data.length * countOfProp <= pd.transformData.length) return;
+            pd.transformData = new Float32Array([
+                ...pd.transformData, ...data
+            ]);
+            gl.bufferData(gl.ARRAY_BUFFER, pd.transformData, gl.DYNAMIC_DRAW);
+            gl.bindVertexArray(null);
+
+        },
+        /**
+         * @param {ElementShaderData} prop 
+         */
+        updateTransformPart: (prop) => {
+            if (!prop.parts.default?.texture) return;
+            const propsDefinition = atlasManager.propsDefinition;
+            const texture = prop.parts.default.texture;
+            const pd = programData['prop'];
+            let d = 1;
+
+            let skip = 4;
+            let attrib = 17;
+            let vertex = 6;
+            let i = prop.index * ((skip + attrib) * vertex);
+
+            const pos = { x: prop.position.x, y: prop.position.y };
+            const texCoordOffset = { x: prop.parts.default.texOffset.x, y: prop.parts.default.texOffset.y };
+
+            let animationLayer = propsDefinition.calcDepth(texture);
+            const textureData = propsDefinition.srcs[texture];
+
+            texCoordOffset.x += textureData.ow;
+            texCoordOffset.y += textureData.oh;
+
+            if (!prop.maxFrames) prop.maxFrames = 1;
+
+            const frameWidth = textureData.imageWidth / prop.maxFrames;
+
+            if (prop.currentFrame) {
+                texCoordOffset.x += frameWidth * prop.currentFrame;
+            }
+
+            // console.log(textureData);
+
+            const objectSize = { width: prop.size.width, height: prop.size.height };
+            const imageSize = { width: frameWidth, height: textureData.h }
+
+            const vertexPositions = [
+                0, 0, 0, 0,
+                objectSize.width, 0, imageSize.width, 0,
+                0, objectSize.height, 0, imageSize.height,
+                objectSize.width, 0, imageSize.width, 0,
+                objectSize.width, objectSize.height, imageSize.width, imageSize.height,
+                0, objectSize.height, 0, imageSize.height,
+            ];
+
+            for (let z = 0; z < vertex; z++) {
+                const atual = i + (z * (skip + attrib)) + skip;
+
+                pd.transformData[atual - 4] = vertexPositions[z * skip + 0];
+                pd.transformData[atual - 3] = vertexPositions[z * skip + 1];
+                pd.transformData[atual - 2] = vertexPositions[z * skip + 2];
+                pd.transformData[atual - 1] = vertexPositions[z * skip + 3];
+
+                pd.transformData[atual + 0] = pos.x;
+                pd.transformData[atual + 1] = pos.y;
+                pd.transformData[atual + 2] = texCoordOffset.x;// + ((prop.currentFrame ?? 0) * prop.size.width);
+                pd.transformData[atual + 3] = texCoordOffset.y;
+                pd.transformData[atual + 4] = animationLayer;
+                pd.transformData[atual + 5] = prop.depth;
+                pd.transformData[atual + 6] = prop.isFlipedX ? 1 : 0;
+                pd.transformData[atual + 7] = prop.isFlipedY ? 1 : 0;
+                pd.transformData[atual + 8] = objectSize.width;
+                pd.transformData[atual + 9] = objectSize.height;
+                pd.transformData[atual + 10] = prop.localGlobalId ?? 0;
+                pd.transformData[atual + 11] = prop.isLightSource ? 1 : 0;
+                pd.transformData[atual + 12] = 0; // rotation
+                pd.transformData[atual + 13] = 0; // replaceColor
+                pd.transformData[atual + 14] = 0; // replaceColor
+                pd.transformData[atual + 15] = 0; // replaceColor
+                pd.transformData[atual + 16] = 0; // replaceColor
+            }
+            d -= 0.0001;
+        }
+    }),
+    dyprop: setupProgram({
+        vertexSource: sprites.vertexShaderSource,
+        fragmentSource: sprites.fragmentShaderSource,
+        /** @param {*} program @param {*} locals */
+        setup: (program, locals) => {
+        },
+        /** @param {*} p */
+        getUniforms: (p) => { return sprites.getUniforms(gl, p); },
+        /** @param {*} p */
+        getAttributes: (p) => { return sprites.getAttributes(gl, p); },
+        /** @param {ElementShaderData} p */
+        addToTransform: (p) => {// (url, { pos, size }) => {
+            const pd = programData.dyprop;
+            if (!pd.vao || !pd.transformBuffer || !p.parts.default.texture) return;
+
+            const dyPropsDefinition = atlasManager.dynamicPropDefinition;
+
+            const prop = dyPropsDefinition.srcs[p.parts.default.texture];
+
+            const size = { w: p.size.width, h: p.size.height, };
+            const pos = { x: p.position.x, y: p.position.y, w: size.w, h: size.h, xw: 0, yh: 0 };
+            pos.xw = pos.x + pos.w;
+            pos.yh = pos.y + pos.h;
+
+            gl.useProgram(pd.program);
+            gl.bindVertexArray(pd.vao);
+            gl.bindBuffer(gl.ARRAY_BUFFER, pd.transformBuffer);
+
+            const tc = {
+                x: 0, y: 0,
+                w: size.w, h: size.h,
+                xw: 0, yh: 0
+            }
+            tc.xw = tc.x + tc.w;
+            tc.yh = tc.y + tc.h;
+
+            const imageLayer = dyPropsDefinition.calcDepth(p.parts.default.texture);
+            pd.transformData = new Float32Array([
+                ...pd.transformData,
+                0, 0, tc.x, tc.y, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+                pos.w, 0, tc.xw, tc.y, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+                0, pos.h, tc.x, tc.yh, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+                pos.w, 0, tc.xw, tc.y, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+                pos.w, pos.h, tc.xw, tc.yh, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+                0, pos.h, tc.x, tc.yh, pos.x, pos.y, prop.ow, prop.oh, imageLayer, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+            ]);
+            gl.bufferData(gl.ARRAY_BUFFER, pd.transformData, gl.DYNAMIC_DRAW);
+            gl.bindVertexArray(null);
+
+        },
+        /** @param {ElementShaderData} prop */
+        updateTransformPart: (prop) => {
+            if (!prop.parts.default.texture) return;
+            const pd = programData.dyprop;
+            const dyPropsDefinition = atlasManager.dynamicPropDefinition;
+            
+            let d = 1;
+            let skip = 4;
+            let attrib = 17;
+            let vertex = 6;
+            let i = prop.index * ((skip + attrib) * vertex);
+            const pos = { x: prop.position.x, y: prop.position.y };
+            const texCoordOffset = { x: prop.parts.default.texOffset.x, y: prop.parts.default.texOffset.y };
+            let animationLayer = dyPropsDefinition.calcDepth(prop.parts.default.texture) ?? 0;
+
+            const textureData = dyPropsDefinition.srcs[prop.parts.default.texture];
+
+            texCoordOffset.x += textureData.ow;
+            texCoordOffset.y += textureData.oh;
+
+            const objectSize = { width: prop.size.width, height: prop.size.height };
+            const imageSize = { width: textureData.w, height: textureData.h }
+
+            const vertexPositions = [
+                0, 0, 0, 0,
+                objectSize.width, 0, imageSize.width, 0,
+                0, objectSize.height, 0, imageSize.height,
+                objectSize.width, 0, imageSize.width, 0,
+                objectSize.width, objectSize.height, imageSize.width, imageSize.height,
+                0, objectSize.height, 0, imageSize.height,
+            ];
+
+            for (let z = 0; z < vertex; z++) {
+                const atual = i + (z * (skip + attrib)) + skip;
+
+                pd.transformData[atual - 4] = vertexPositions[z * skip + 0];
+                pd.transformData[atual - 3] = vertexPositions[z * skip + 1];
+                pd.transformData[atual - 2] = vertexPositions[z * skip + 2];
+                pd.transformData[atual - 1] = vertexPositions[z * skip + 3];
+
+                pd.transformData[atual + 0] = pos.x;
+                pd.transformData[atual + 1] = pos.y;
+                pd.transformData[atual + 2] = texCoordOffset.x + ((prop.currentFrame ?? 0) * prop.size.width);
+                pd.transformData[atual + 3] = texCoordOffset.y;
+                pd.transformData[atual + 4] = animationLayer;
+                pd.transformData[atual + 5] = prop.depth;
+                pd.transformData[atual + 6] = prop.isFlipedX ? 1 : 0;
+                pd.transformData[atual + 7] = prop.isFlipedY ? 1 : 0;
+                pd.transformData[atual + 8] = prop.size.width;
+                pd.transformData[atual + 9] = prop.size.height;
+                pd.transformData[atual + 10] = prop.localGlobalId ?? 0;
+                pd.transformData[atual + 11] = prop.isLightSource ? 1 : 0;
+                pd.transformData[atual + 12] = 0; // rotation
+                pd.transformData[atual + 13] = 0; // replaceColor
+                pd.transformData[atual + 14] = 0; // replaceColor
+                pd.transformData[atual + 15] = 0; // replaceColor
+                pd.transformData[atual + 16] = 0; // replaceColor
+            }
+            d -= 0.0001;
+        },
+        /** @param {*} prop */
+        removeTransformPart: (prop) => {
+            const pd = programData['dyprop'];
+
+            let skip = 4;
+            let attrib = 17;
+            let vertex = 6;
+            let i = 1 * ((skip + attrib) * vertex);
+
+            const t = pd.transformData.slice(0, pd.transformData.length - i);
+            pd.transformData = new Float32Array(t);
+        }
+    }),
+    background: setupProgram({
+        vertexSource: background.vertexShaderSource,
+        fragmentSource: background.fragmentShaderSource,
+        /** @param {*} program @param {*} locals */
+        setup: (program, locals) => {
+        },
+        /** @param {*} p */
+        getUniforms: (p) => { return background.getUniforms(gl, p); },
+        /** @param {*} p */
+        getAttributes: (p) => { return background.getAttributes(gl, p); }
+    }),
+    cenario: setupProgram({
+        vertexSource: cenario.vertexShaderSource,
+        fragmentSource: cenario.fragmentShaderSource.replaceAll('[COUNTOFLIGHT]', countOfLight.toString()),
+        /** @param {*} p */
+        getUniforms: (p) => { return cenario.getUniforms(gl, p); },
+        /** @param {*} p */
+        getAttributes: (p) => { return cenario.getAttributes(gl, p); }
+    }),
+    rio: setupProgram({
+        vertexSource: rio.vertexShaderSource,
+        fragmentSource: rio.fragmentShaderSource,
+        /** @param {*} p */
+        getUniforms: (p) => { return rio.getUniforms(gl, p); },
+        /** @param {*} p */
+        getAttributes: (p) => { return rio.getAttributes(gl, p); }
+    }),
+    raw: setupProgram({
+        vertexSource: raw.vertexShaderSource,
+        fragmentSource: raw.fragmentShaderSource,
+        /** @param {*} p */
+        getUniforms: (p) => { return raw.getUniforms(gl, p); },
+        /** @param {*} p */
+        getAttributes: (p) => { return raw.getAttributes(gl, p); }
+    }),
+    light: setupProgram({
+        vertexSource: luz.vertexShaderSource,
+        fragmentSource: luz.fragmentShaderSource,
+        /** @param {*} p */
+        getUniforms: (p) => { return luz.getUniforms(gl, p); },
+        /** @param {*} p */
+        getAttributes: (p) => { return luz.getAttributes(gl, p); },
+    }),
+};
 
 function everySecond() {
     if (on['everySecond']) {
@@ -492,10 +880,14 @@ function everyFrame() {
         then = now - (elapsed % fpsInterval);
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        programData.char.transformData.fill(0);
+        programData.prop.transformData.fill(0);
+
         options.currentCharDepth = options.charDepth;
-        if (on['everyFrame']) {
-            for (let i = 0; i < on['everyFrame'].length; i++) {
-                on['everyFrame'][i]();
+        if (on.everyFrame) {
+            for (let i = 0; i < on.everyFrame.length; i++) {
+                on.everyFrame[i]();
             }
         }
         uiCtx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
@@ -529,9 +921,11 @@ export default {
     options,
     programData,
     canvas,
+    uiCanvas,
     gl,
     countOfCharProps,
     globalLight,
+    templateElementData,
     getLightCount: () => Object.getOwnPropertyNames(lights).length,
     //getLightPositions: () => [].concat(...Object.getOwnPropertyNames(lights).map(x => [lights[x].pos.x, lights[x].pos.y, lights[x].pos.z])),
     /**
@@ -541,5 +935,6 @@ export default {
     getLight: (id) => lights[id],
     getLights: () => lights,
     requestUIDraw,
-    changeTargetFramerate
+    changeTargetFramerate,
+    getTargetFramerate,
 };

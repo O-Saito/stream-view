@@ -26,9 +26,9 @@ out vec4 fragColor;
 
 void main()
 {
-    float waveStrength = 0.005; 
-    float frequency = 6.0;    
-    float speed = 2.0;         
+    float waveStrength = 0.010;//0.005; 
+    float frequency = 8.0;//6.0;    
+    float speed = 3.0;//2.0;         
     
     float waveX = sin(vTexCoord.y * frequency + uTime * speed) * waveStrength;
     float waveY = cos(vTexCoord.x * frequency + uTime * speed) * waveStrength;

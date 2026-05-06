@@ -1,308 +1,298 @@
-<style>
-    @font-face {
-        font-family: 'customFont';
-        src: url('/Kingthings_Exeter.ttf');
-    }
+<!DOCTYPE html>
+<html lang="pt-BR">
 
-    * {
-        image-rendering: pixelated;
-        box-sizing: border-box;
-        margin: 0;
-    }
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/scaworld/editor.css">
+</head>
 
-    html,
-    body,
-    canvas {
-        image-rendering: pixelated;
-        image-rendering: crisp-edges;
-        transform: scale(1) translateZ(0);
-        will-change: transform;
-        backface-visibility: hidden;
-        perspective: 1px;
-    }
+<body>
+    <!-- Panel 1: Sidebar (left, full height minus timeline) -->
+    <aside class="html-main panel" id="sidebar">
+        <div class="resize-handle"></div>
+        <div class="panel-header">
+            <span class="panel-title">Animation Data</span>
+        </div>
+        <div class="panel-content">
+            <div id="parts-data"> </div>
+        </div>
+    </aside>
 
-    canvas {
-        display: block;
-        image-rendering: pixelated !important;
-        /* Modern browsers */
-        image-rendering: crisp-edges;
-        /* Firefox */
-        image-rendering: -webkit-optimize-contrast;
-        /* Safari */
-        image-rendering: -moz-crisp-edges;
-        /* Firefox */
-        image-rendering: -o-crisp-edges;
-        /* Opera */
-        transform: translateZ(0);
-        /* Força o CEF a usar escala exata */
-        will-change: transform;
-        /* Otimização para CEF */
-    }
+    <!-- Right: Main content (flex column, takes remaining space) -->
+    <div id="main-content">
+        <!-- Panel 2: Animation Controls -->
+        <main class="panel" id="panel-canvas">
+            <div class="panel-header">
+                <span class="panel-title">Animation Controls</span>
+            </div>
+            <div class="panel-content">
+                <div class="control-block">
+                    <label for="ddl-animations">Animation: </label>
+                    <select id="ddl-animations"></select>
+                </div>
+                <div class="control-block">
+                    <button type="button" id="btn-new-animation">Nova Animação</button>
+                    <button type="button" id="btn-baixar-json">Salvar</button>
+                </div>
+                <br>
+                <div class="control-block">
+                    <label><input id="chk-pause" type="checkbox"> Pause</label>
+                </div>
+                <div class="control-block">
+                    <label style="width: 150px; display: inline-block;">Animation Frame (<span
+                            id="animation-frame-value"></span>)</label>
+                    <input id="range-animation-frames" type="range" min="0" max="0" step="1">
+                </div>
+                <div class="control-block">
+                    <label for="animation-duration">Duration (frames): </label>
+                    <input type="number" id="animation-duration" min="0" style="width: 80px;">
+                </div>
+                <div class="control-block">
+                    <label for="animation-speed">Animation Speed: </label>
+                    <input type="number" id="animation-speed" min="0" style="width: 80px;">
+                </div>
+                <div class="control-block">
+                    <label for="canvas-zoom">Canvas Zoom: </label>
+                    <input type="number" id="canvas-zoom" min="0.1" max="10" step="0.1" value="2" style="width: 80px;">
+                </div>
+            </div>
+            <div class="panel-resize-handle"></div>
+        </main>
 
-    .html-main {
-        width: 100%;
-        height: 100%;
-    }
+        <!-- Panel 3: Viewport (canvas) -->
+        <div class="panel" id="panel-viewport" style="height: 250px;">
+            <div class="panel-header">
+                <span class="panel-title">Viewport</span>
+            </div>
+            <div class="panel-content">
+                <div class="background-ambiente">
+                    <div class="html-canvas layer">
+                        <div class="element floor"></div>
+                        <canvas id="gameCanvas" class="element canvas"></canvas>
+                        <canvas id="uiCanvas" class="element canvas"></canvas>
+                        <div class="element fps"></div>
+                        <div class="element time"></div>
+                        <div class="element size"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel-resize-handle"></div>
+        </div>
 
-    .html-canvas {
-        width: 100%;
-        height: 100%;
-    }
+        <!-- Panel 4: Part Textures -->
+        <div class="panel" id="panel-textures">
+            <div class="panel-header">
+                <span class="panel-title">Part Textures</span>
+            </div>
+            <div class="panel-content">
+                <div id="texture-selects-container" style="overflow-x: auto;max-height: 308px;"></div>
+            </div>
+        </div>
 
-    .layer {
-        position: absolute;
-        top: 0;
-        left: 0;
-    }
+        <!-- Panel 5: Timeline (bottom, full width) -->
+        <div class="panel" id="panel-timeline" style="height: 220px;">
+            <div class="panel-header">
+                <span class="panel-title">Timeline</span>
+            </div>
+            <div class="panel-content">
+                <div class="timeline-controls">
+                    <label for="timeline-frames-show">Frames to show: </label>
+                    <input type="number" id="timeline-frames-show" min="10" max="500" value="50" style="width: 60px;">
+                    <label style="margin-left: 16px;">
+                        <input type="checkbox" id="chk-scroll-with-playhead"> Scroll with playhead
+                    </label>
+                </div>
+                <div class="timeline-wrapper" id="timeline-wrapper">
+                    <div class="timeline-ruler" id="timeline-ruler"></div>
+                    <div class="timeline-nodes" id="timeline-nodes"></div>
+                    <div class="timeline-playhead" id="timeline-playhead"></div>
+                </div>
+            </div>
+            <div class="panel-resize-handle"></div>
+        </div>
 
-    .element {
-        position: absolute;
-        background-size: 100% 100%;
-    }
-
-    .element.canvas {
-        width: 100%;
-        height: 100%;
-    }
-
-    .floor {
-        width: 100%;
-        height: 100%;
-        /*background-image: url(/chao.png);
-        background-size: auto 15px;
-        background-repeat: repeat-x;
-        background-position: right 145px;*/
-    }
-
-    .water {
-        width: 100%;
-        height: 100%;
-        top: 12px;
-        background-image: url(/agua/agua-parada.png);
-    }
-
-    .fps {
-        top: 0;
-        color: red;
-    }
-
-    .time {
-        top: 0;
-        left: 30px;
-        color: red;
-    }
-
-    .size {
-        top: 30px;
-        color: red;
-    }
-
-    #uiCanvas {
-        position: relative;
-    }
-
-    #parts-data input[type="number"] {
-        max-width: 60px;
-    }
-</style>
-
-<div class="html-main" style="height: 200px;">
-    <div class="background-ambiente">
-        <div class="html-canvas layer" style="height: 200px;">
-            <div class="element floor" style="height: 200px;"></div>
-            <canvas id="gameCanvas" class="element canvas"></canvas>
-            <canvas id="uiCanvas" class="element canvas"></canvas>
-            <div class="element fps"></div>
-            <div class="element time"></div>
-            <div class="element size"></div>
-            <div>
-                <label>Animation: </label> <select id="ddl-animations"></select>
-                <button type="button" id="btn-new-animation">Nova Animação</button>
-                <button type="button" id="btn-baixar-json">Salvar</button>
-                <br />
-                <label><input id="chk-pause" type="checkbox" /> Pause</label> <br />
-                <label>Animation Frame (<span id="animation-frame-value"></span>)</label>
-                <input id="range-animation-frames" type="range" min="0" max="0" step="1" />
+        <div class="panel">
+            <div class="panel-content">
+                <div id="debug">
+                    <canvas id="debugAtlasSection"></canvas>
+                    <canvas id="debugAtlas"></canvas>
+                </div>
+                <canvas id="debug-canvas"></canvas>
+                <div id="show-emotes"></div>
             </div>
         </div>
     </div>
-</div>
 
-<div>
-    <div style="max-width: 50%;">
-        <h3>Animation Data</h3>
-        <label>Duration (frames): </label> <input type="number" id="animation-duration" min="0" />
-        <div id="parts-data"></div>
-    </div>
-</div>
+    <script type="module">
+        //@ts-check
+        import engine from '/scaworld/js/engine.js';
+        import world from '/scaworld/js/world.js';
+        import { atlases, charDefinitions, propsDefinition } from '/scaworld/js/atlasManager.js';
+        import charAnimatior from '/scaworld/js/systems/characterAnimator.js';
+        import character from '/scaworld/js/elements/character.js';
+        import editor from '/scaworld/js/editor.js';
 
-<canvas id="debug-canvas" style="position: absolute; top: 300px; display: none;"></canvas>
+        const debug = /** @type {HTMLCanvasElement} */ (document.getElementById('debugAtlas'));
+        const ctx = /** @type {CanvasRenderingContext2D} */ debug.getContext('2d');
 
-<div id="show-emotes" style="display: none;"></div>
+        const ddlAtlas = document.getElementById('ddlAtlas');
+        const ddlAtlasSection = document.getElementById('ddlAtlasSection');
 
-<div id="debug">
-    <canvas id="debugAtlasSection"></canvas>
-    <canvas id="debugAtlas"></canvas>
-</div>
+        engine.resizeCanvas(100, 100);
+        const lblFps = document.getElementsByClassName('fps')[0];
+        const canvas = engine.canvas;
+        const gl = engine.gl;
+        const programData = engine.programData;
 
-<script type="module">
-    //@ts-check
-    import engine from '/stream-view/scaworld/js/engine.js';
-    import game from '/stream-view/scaworld/js/game.js';
-    import { atlases, charDefinitions, propsDefinition, createAllAtlas } from '/stream-view/scaworld/js/atlasManager.js';
-    import charAnimatior from '/stream-view/scaworld/js/characterAnimator.js';
-    import editor from '/stream-view/scaworld/js/editor.js';
+        const gameCanvas = document.getElementById('gameCanvas');
 
-    const debug = /** @type {HTMLCanvasElement} */ (document.getElementById('debugAtlas'));
-    const ctx = /** @type {CanvasRenderingContext2D} */ debug.getContext('2d');
+        console.log(atlases);
 
-    const ddlAtlas = document.getElementById('ddlAtlas');
-    const ddlAtlasSection = document.getElementById('ddlAtlasSection');
+        window.world = world;
 
-    engine.resizeCanvas(1920, 190);
-    const lblFps = document.getElementsByClassName('fps')[0];
-    const canvas = engine.canvas;
-    const gl = engine.gl;
-    const programData = engine.programData;
+        /** @param {string} url */
+        async function loadJSON(url) {
+            const r = await fetch(url);
+            const text = await r.text();
+            return JSON.parse(text);
+        }
 
-    /*setTimeout(() => {
-        createChar({
-            "userId": "145590747",
-            "username": "scavote",
-            "name": "scavote",
-            "isMod": true,
-            "isCitizen": true,
-            "isOnWorld": true,
-            "isDead": null,
-            "preset": {
-                "helmet": "/char/props/helmet/coroa.png",
-                "capeFront": "/char/props-especial/cape/cape_front.png",
-                "capeBack": "/char/props-especial/cape/cape_back.png",
-                "face": "/char/props-especial/face/moustache.png",
-                "head": "/char/body/skeleton/head",
-                "body": "/char/body/skeleton/body",
-                "legs": "/char/body/skeleton/legs",
-                "weapon": "/char/props/equip/espada",
-                "second_weapon": "/char/props/equip/escudo_madeira"
-            }
-        }, 'point');
-        createChar();
-        createChar();
-    }, 1000);*/
+        (async () => {
+            console.log(`Canvas Width: ${canvas.width} / Height: ${canvas.height}`);
 
-    console.log(atlases);
+            let floatingTime = 0;
 
-    /*const createChar = (userData, spawn) => {
-        if (!spawn) spawn = Character.spawnType.portal;
-        if (spawn == 'point') spawn = Character.spawnType.position;
-        const char = new Character({ position: { x: 400, y: 40 }, userData, spawnType: spawn });
-    }*/
+            const {
+                propCenarioFBO,
+                cenarioFBO,
+                backgroundFBO,
+                lightFBO,
+                charDrawer,
+                propDrawer,
+                backgroundDrawer,
+                cenarioDrawer,
+                rioDrawer,
+                rawDrawer,
+                dyPropDrawer,
+                lightDrawer,
+            } = await world.setup(gl);
 
-    async function loadJSON(url) {
-        const r = await fetch(url);
-        const text = await r.text();
-        return JSON.parse(text);
-    }
+            engine.on('everySecond', () => {
+                lblFps.innerHTML = engine.getFramerate();
+                debug.width = atlases['char']['canvas'].width;
+                debug.height = atlases['char']['canvas'].height;
+                if (ctx)
+                    ctx.drawImage(atlases['char']['canvas'], 0, 0)
+            });
 
-    (async () => {
-        console.log(`Canvas Width: ${canvas.width} / Height: ${canvas.height}`);
+            charAnimatior.loadSpritesData();
+            character.addCharacter({ pos: { x: 40, y: 20 }, enterPortal: false });
 
-        let floatingTime = 0;
+            engine.on('everyFrame', () => {
 
-        const {
-            propCenarioFBO,
-            cenarioFBO,
-            backgroundFBO,
-            lightFBO,
-            charDrawer,
-            propDrawer,
-            backgroundDrawer,
-            cenarioDrawer,
-            rioDrawer,
-            rawDrawer,
-            dyPropDrawer,
-            lightDrawer,
-        } = await game.setup(gl);
+                if (editor.running()) {
+                    //console.log('editor not running');
+                }
+                editor.editorProcessUserAnimation(world.getUsers()[0]);
 
-        //window.portal = game.getPropList().find(x => x.constructor.name == "Portal");
+                //engine.programData.char.updateTransformPart(window['data'], charDefinitions);
 
-        engine.on('everySecond', () => {
-            lblFps.innerHTML = engine.getFramerate();
-            debug.width = atlases['char']['canvas'].width;
-            debug.height = atlases['char']['canvas'].height;
-            if (ctx)
-                ctx.drawImage(atlases['char']['canvas'], 0, 0)
-            if (Math.floor(Math.random() * 99) <= 7) {
-                //createProp('Nuvem', { pos: { x: -100, y: canvas.height - (Math.floor(Math.random() * 45) + 10) }, depth: 1 });
-            }
-        });
+                // DRAW CHARS
+                gl.useProgram(programData['char'].program);
+                gl.activeTexture(gl.TEXTURE0 + charDrawer.atlasIndex);
+                gl.activeTexture(gl.TEXTURE0 + charDrawer.normalIndex);
+                gl.bindVertexArray(programData['char'].vao);
+                gl.bindBuffer(gl.ARRAY_BUFFER, programData['char'].transformBuffer);
+                gl.bufferSubData(gl.ARRAY_BUFFER, 0, programData['char'].transformData);
+                gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, 1 * engine.countOfCharProps);
+                gl.bindVertexArray(null);
+                // END DRAW CHARS
 
-        window['user'] = game.game.users[1];
+                floatingTime += 0.001;
+            });
 
-        window['data'] = {
-            index: 0,
-            depth: 1,
-            position: { x: 100, y: 100 },
-            size: { width: 32, height: 32 },
-            isFlipedX: false,
-            currentFrame: 0,
-            parts: {
-                body: {
-                    texture: '/char/body/skeleton/body/default.png',
-                    currentFrame: 0,
-                    texOffset: [],
-                },
-                head: {
-                    texture: '/char/body/skeleton/head/default.png',
-                    currentFrame: 0,
-                    texOffset: [],
-                },
-                legs: {
-                    texture: '/char/body/skeleton/legs/default.png',
-                    currentFrame: 0,
-                    texOffset: [],
-                },
-                helmet: {
-                    texture: '/char/props/helmet/coroa.png',
-                    currentFrame: 0,
-                    texOffset: [],
-                },
-                pants: {
-                    texture: '/char/props/pants/leather/default.png',
-                    currentFrame: 0,
-                    texOffset: [],
-                },
-            },
-        };
+            editor.register();
 
-        engine.programData['char'].addToTransform(null, 1);
+            // Sidebar resize functionality
+            const sidebar = document.getElementById('sidebar');
+            const resizeHandle = sidebar?.querySelector('.resize-handle');
+            if (sidebar && resizeHandle) {
+                // Load saved width from localStorage
+                const savedWidth = localStorage.getItem('editor-sidebar-width');
+                if (savedWidth && parseInt(savedWidth) > 0) {
+                    document.body.style.setProperty('--col1', savedWidth + 'px');
+                }
 
-        charAnimatior.loadSpritesData();
+                let isResizing = false;
 
-        engine.on('everyFrame', () => {
+                resizeHandle.addEventListener('mousedown', (e) => {
+                    isResizing = true;
+                    resizeHandle.classList.add('dragging');
+                    document.body.style.cursor = 'col-resize';
+                    document.body.style.userSelect = 'none';
+                });
 
-            if (!editor.running()) {
-                charAnimatior.processUserAnimation(window['user']);
+                document.addEventListener('mousemove', (e) => {
+                    if (!isResizing) return;
+                    const newWidth = Math.max(100, e.clientX); // Minimum 100px
+                    document.body.style.setProperty('--col1', newWidth + 'px');
+                });
+
+                document.addEventListener('mouseup', () => {
+                    if (isResizing) {
+                        isResizing = false;
+                        resizeHandle.classList.remove('dragging');
+                        document.body.style.cursor = '';
+                        document.body.style.userSelect = '';
+                        // Save width to localStorage
+                        const currentWidth = parseInt(
+                            getComputedStyle(document.body).getPropertyValue('--col1')
+                        ) || 275;
+                        localStorage.setItem('editor-sidebar-width', currentWidth.toString());
+                    }
+                });
             }
 
-            //engine.programData.char.updateTransformPart(window['data'], charDefinitions);
+            // Panel resize functionality (generic - works for ANY panel with .panel-resize-handle)
+            document.querySelectorAll('.panel').forEach(panel => {
+                const resizeHandle = panel.querySelector('.panel-resize-handle');
+                if (!resizeHandle) return;
 
-            // DRAW CHARS
-            gl.useProgram(programData['char'].program);
-            gl.activeTexture(gl.TEXTURE0 + charDrawer.atlasIndex);
-            gl.activeTexture(gl.TEXTURE0 + charDrawer.normalIndex);
-            gl.bindVertexArray(programData['char'].vao);
-            gl.bindBuffer(gl.ARRAY_BUFFER, programData['char'].transformBuffer);
-            gl.bufferSubData(gl.ARRAY_BUFFER, 0, programData['char'].transformData);
-            gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, 1 * engine.countOfCharProps);
-            gl.bindVertexArray(null);
-            // END DRAW CHARS
+                let isResizing = false;
+                let startY = 0;
+                let startHeight = 0;
 
-            floatingTime += 0.001;
-        });
+                resizeHandle.addEventListener('mousedown', (e) => {
+                    isResizing = true;
+                    startY = e.clientY;
+                    startHeight = panel.offsetHeight;
+                    resizeHandle.classList.add('dragging');
+                    document.body.style.cursor = 'ns-resize';
+                    document.body.style.userSelect = 'none';
+                    e.preventDefault();
+                });
 
-        editor.register();
+                document.addEventListener('mousemove', (e) => {
+                    if (!isResizing) return;
+                    const diff = e.clientY - startY; // Dragging down = taller
+                    const newHeight = Math.max(100, startHeight + diff);
+                    panel.style.height = newHeight + 'px';
+                });
 
-    })();
+                document.addEventListener('mouseup', () => {
+                    if (isResizing) {
+                        isResizing = false;
+                        resizeHandle.classList.remove('dragging');
+                        document.body.style.cursor = '';
+                        document.body.style.userSelect = '';
+                    }
+                });
+            });
 
-</script>
+        })();
+
+    </script>
+</body>
+
+</html>

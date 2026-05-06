@@ -11,8 +11,8 @@ import propsSprites from './sprites/propsSprites.json' with { type: "json" };
 /**
  * @typedef {Object} SpriteDefinitionSrcs 
  * @property {number} i - Index of layer
- * @property {number} o - Offset Y
  * @property {number} ow - Offset X
+ * @property {number} oh - Offset Y
  * @property {number} w - Width
  * @property {number} h - Height
  * @property {number} imageWidth - Real image width
@@ -48,6 +48,9 @@ export const charDefinitions = {
     calcDepth: (src) => { return calcDepth(charDefinitions, src); }
 };
 
+/**
+ * @type {SpriteDefinition}
+ */
 export const propsDefinition = {
     srcs: {},
     size: 0,
@@ -58,6 +61,9 @@ export const propsDefinition = {
     calcDepth: (src) => { return calcDepth(propsDefinition, src); }
 }
 
+/**
+ * @type {SpriteDefinition}
+ */
 export const dynamicPropDefinition = {
     srcs: {},
     size: 0,
@@ -73,8 +79,8 @@ export const dynamicPropDefinition = {
  * @returns 
  */
 function fixOrigin(src) {
-    if (typeof src == 'string') return `/stream-view/scaworld/sprites${src}`;
-    return src.src.replace(`${location.origin}/stream-view/scaworld/sprites`, '');
+    if (typeof src == 'string') return `/scaworld/sprites${src}`;
+    return src.src.replace(`${location.origin}/scaworld/sprites`, '');
 }
 
 /**
@@ -117,15 +123,14 @@ function loadImage(data, arr) {
  * @param {number} width 
  * @param {number} height 
  * @param {*} options 
- * @returns {[OffscreenCanvas, OffscreenCanvasRenderingContext2D] | null}
+ * @returns {[OffscreenCanvas, OffscreenCanvasRenderingContext2D]}
  */
 function createOffscreenCanvas(width, height, options = undefined) {
     if (!options) options = {};
     if (options.alpha == null || options.alpha == undefined) options.alpha = true;
     if (options.reverse == undefined) options.reverse = true;
     const c = new OffscreenCanvas(width, height);
-    const ctx = c.getContext("2d", options);
-    if (ctx == null) return null;
+    const ctx = /** @type {OffscreenCanvasRenderingContext2D} */ (c.getContext("2d", options));
     if (options.notUseDefaultConfig) return [c, ctx];
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, c.width, c.height);
@@ -153,22 +158,39 @@ export const createCharSpriteAtlas = async () => {
 
     await Promise.all(promises);
 
-    const maxWidth = Math.max(...imgs.map(x => Array.isArray(x) ? x[0].width : x.width));
+    const maxWidth = Math.max(...imgs.map(x => x && x[0] ? x[0].width : 0));
 
     const [tmpC, tmpCtx] = createOffscreenCanvas(maxWidth, heightOfImage * imgs.length);
     const [tmpCNormal, tmpCtxNormal] = createOffscreenCanvas(maxWidth, heightOfImage * imgs.length);
 
+    /**
+     * @param {HTMLImageElement} img 
+     * @param {number} index 
+     * @param {number} x 
+     * @param {HTMLImageElement | null} normal 
+     */
     const draw = (img, index, x, normal = null) => {
-        charDefinitions.srcs[fixOrigin(img)] = { i: index, o: 0, w: x, imageWidth: img.width };
+        charDefinitions.srcs[fixOrigin(img)] = { i: index, w: x, imageWidth: img.width, ow: 0, oh: 0, h: x };
         tmpCtx.drawImage(img, x, index * heightOfImage);
         if (normal) tmpCtxNormal.drawImage(normal, x, index * heightOfImage);
     };
 
-    imgs.sort((a, b) => b.width - a.width);
+    imgs.sort((a, b) => {
+        const ac = Array.isArray(a) ? (a[0] ? a[0] : a[1]) : a;
+        const bc = Array.isArray(b) ? (b[0] ? b[0] : b[1]) : b;
+
+        if (!bc || !ac) return 0;
+
+        return bc.width - ac.width;
+    });
+
+    console.log(imgs);
 
     let fixI = -1;
     for (let i = 0; i < imgs.length; i++) {
-        const { img, normal } = Array.isArray(imgs[i]) ? { img: imgs[i][0], normal: imgs[i][1] } : { img: imgs[i], normal: null };
+        const c = imgs[i];
+        if (c == null) continue;
+        const { img, normal } = { img: c[0], normal: c[1] };
         if (img == null) continue;
         fixI++;
         let currentWidth = img.width;
@@ -177,12 +199,16 @@ export const createCharSpriteAtlas = async () => {
         while (currentWidth <= tmpC.width) {
             const freeWidth = tmpC.width - currentWidth;
             if (freeWidth == 0) break;
-            const n = imgs.find(x => x != null && x.width <= freeWidth);
+            const n = imgs.find(x => {
+                if (x == null) return false;
+                if (x[0] == null) return false;
+                return x[0].width <= freeWidth;
+            });
             if (n == undefined || n == null) break;
             const { newImg, newNormal } = Array.isArray(n) ? { newImg: n[0], newNormal: n[1] } : { newImg: n, newNormal: null };
-            draw(newImg, fixI, currentWidth, normal);
+            draw(newImg, fixI, currentWidth, newNormal);
             currentWidth += newImg.width;
-            imgs[imgs.indexOf(newImg)] = null;
+            imgs[imgs.indexOf(n)] = null;
         }
     }
     fixI++;
@@ -216,12 +242,16 @@ export const createCharSpriteAtlas = async () => {
 export const createPropsSpriteAtlas = async () => {
     const n = Date.now();
 
+    /**
+     * @type {*}
+     */
     const data = {
         maxHeight: { src: '', size: 0 },
         maxWidth: { src: '', size: 0 },
         srcs: {},
         size: 0,
     };
+    /** @type {TempImageArray} */
     const imgs = [];
 
     const promises = [];
@@ -232,8 +262,11 @@ export const createPropsSpriteAtlas = async () => {
     await Promise.all(promises);
 
     imgs.sort((a, b) => {
-        const currentA = Array.isArray(a) ? a[0] : a;
-        const currentB = Array.isArray(b) ? b[0] : b;
+        if (!a || !a[0]) return 0;
+        if (!b || !b[0]) return 0;
+
+        const currentA = a[0];
+        const currentB = b[0];
         if (currentA.width > data.maxWidth.size) {
             data.maxWidth.src = fixOrigin(currentA);
             data.maxWidth.size = currentA.width;
@@ -257,25 +290,32 @@ export const createPropsSpriteAtlas = async () => {
     const [tmpC, tmpCtx] = createOffscreenCanvas(data.maxWidth.size, data.maxHeight.size * imgs.length);
     const [tmpCNormal, tmpCtxNormal] = createOffscreenCanvas(data.maxWidth.size, data.maxHeight.size * imgs.length);
 
-    const draw = ({ img, index, xOffset, yOffset, normal = null, maxWidth = null, maxHeight = null, innerIndex = 0 }) => {
+    /**
+     * 
+     * @param {{img: HTMLImageElement, index: number, xOffset: number, yOffset: number, normal: HTMLImageElement | null, maxWidth: number, maxHeight?: number | null, innerIndex: number}} param0 
+     * @returns 
+     */
+    const draw = ({ img, index, xOffset, yOffset, normal = null, maxWidth, maxHeight = null, innerIndex = 0 }) => {
         propsDefinition.srcs[fixOrigin(img)] = {
             i: index,
             ow: xOffset,
             oh: data.maxHeight.size - (img.height + yOffset),
             w: img.width,
             h: img.height,
+            imageWidth: img.width,
         };
         data.srcs[fixOrigin(img)] = fixOrigin(img);
         tmpCtx.drawImage(img, xOffset, yOffset + (index * data.maxHeight.size));
         if (normal) tmpCtxNormal.drawImage(normal, xOffset, yOffset + (index * data.maxHeight.size));
-        imgs[normal ? imgs.indexOf(imgs.find(x => Array.isArray(x) && x[0] == img)) : imgs.indexOf(img)] = null;
+        const el = imgs.find(x => x && x[0] == img);
+        if (el) imgs[imgs.indexOf(el)] = null;
 
         const freeWidth = maxWidth == null ? data.maxWidth.size - (xOffset + img.width) : maxWidth;
         const freeHeight = maxHeight == null ? data.maxHeight.size - currentHeight : maxHeight;
         console.log(innerIndex, index, img.src, { freeWidth, freeHeight }, { width: img.width, height: img.height });
 
         if (img.src == 'http://localhost:1601/teste.png') {
-            drawCanvasForDebug(tmpC); console.log('here');
+            //drawCanvasForDebug(tmpC); console.log('here');
         }
         if (freeWidth > 0) {
             let n = imgs.find(x => { const a = x && Array.isArray(x) ? x[0] : x; return a != null && a.width <= freeWidth && a.height <= freeHeight; });
@@ -287,6 +327,11 @@ export const createPropsSpriteAtlas = async () => {
         }
     };
 
+    /**
+     * @param {HTMLImageElement} img 
+     * @param {number} cutWidth 
+     * @returns 
+     */
     const drawForHeight = (img, cutWidth) => {
         let freeHeight = data.maxHeight.size - currentHeight;
         let offset = currentHeight;
@@ -308,16 +353,17 @@ export const createPropsSpriteAtlas = async () => {
     let currentWidth = 0;
     let fixI = -1;
     for (let i = 0; i < imgs.length; i++) {
-        if (imgs[i] == null) continue;
-        const { img, normal } = Array.isArray(imgs[i]) ? { img: imgs[i][0], normal: imgs[i][1] } : { img: imgs[i], normal: null };
+        const c = imgs[i];
+        if (c == null) continue;
+        const { img, normal } = { img: c[0], normal: c[1] };
         if (img == null) continue;
         fixI++;
         currentHeight = img.height;
         currentWidth = img.width;
-        imgs[normal ? imgs.indexOf(imgs.find(x => Array.isArray(x) && x[0] == img)) : imgs.indexOf(img)] = null;
+        imgs[imgs.indexOf(c)] = null;
         drawForHeight(img, currentWidth);
         currentHeight = img.height;
-        draw({ img, index: fixI, xOffset: 0, yOffset: 0, normal, maxWidth: data.maxWidth.size - img.width, maxHeight: data.maxHeight.size });
+        draw({ img, index: fixI, xOffset: 0, yOffset: 0, normal, maxWidth: data.maxWidth.size - img.width, maxHeight: data.maxHeight.size, innerIndex: 0 });
     }
     fixI++;
 
@@ -358,12 +404,14 @@ export const createBackgroundAtlas = async () => {
     };
 
     const imgsNormal = {};
+    /** @type {TempImageArray} */
     const imgs = [];
 
-    const order = [
-
-    ];
-    const loadPropsImage = (src) => {
+    /**
+     * @type {any[]}
+     */
+    const order = [];
+    const loadPropsImage = (/** @type {string} */ src) => {
         order.push(src);
         return new Promise((resolve) => {
             let ok = false;
@@ -379,7 +427,7 @@ export const createBackgroundAtlas = async () => {
                 }
 
                 data.size++;
-                imgs.push(image);
+                imgs.push([image, null]);
                 resolve(image);
             }
 
@@ -388,10 +436,10 @@ export const createBackgroundAtlas = async () => {
     };
 
     await Promise.all([
-        loadPropsImage('/world/ceu/estrelas.png'),
-        loadPropsImage('/world/ceu/dia.png'),
-        loadPropsImage('/world/ceu/tarde.png'),
-        loadPropsImage('/world/ceu/noite2.png'),
+        loadPropsImage('/scaworld/sprites/world/ceu/estrelas.png'),
+        loadPropsImage('/scaworld/sprites/world/ceu/dia.png'),
+        loadPropsImage('/scaworld/sprites/world/ceu/tarde.png'),
+        loadPropsImage('/scaworld/sprites/world/ceu/noite2.png'),
     ]);
 
     const numOfLayers = data.size;
@@ -402,8 +450,9 @@ export const createBackgroundAtlas = async () => {
     //let offset = 0;
     let currentHeight = 0;
     for (let i = 0; i < data.size; i++) {
-        const img = imgs.find(x => x.src.replace(location.origin, '') == order[i]);
-        ctx.drawImage(img, 0, currentHeight);
+        const img = imgs.find(x => x && x[0].src.replace(location.origin, '') == order[i]);
+        if(!img) return;
+        ctx.drawImage(img[0], 0, currentHeight);
         currentHeight += data.maxHeight.size;
     }
 
@@ -438,11 +487,11 @@ export const createDynamictPropSpriteAtlas = async () => {
     const [c, ctx] = createOffscreenCanvas(data.maxWidth.size, data.maxHeight.size * data.numOfLayers, { willReadFrequently: true });
     const [cNormal, ctxNormal] = createOffscreenCanvas(data.maxWidth.size, data.maxHeight.size * data.numOfLayers, { willReadFrequently: true });
 
-    const getImageData = (canvasCtx) => {
+    const getImageData = (/** @type {OffscreenCanvasRenderingContext2D} */ canvasCtx) => {
         return canvasCtx.getImageData(0, 0, data.maxWidth.size, data.maxHeight.size * data.numOfLayers).data;
     }
 
-    const draw = (image, normal) => {
+    const draw = (/** @type {HTMLImageElement} */ image, /** @type {HTMLImageElement} */ normal) => {
         const src = image.src.replace(location.origin, '');
         if (dynamicPropDefinition.srcs[src]) return;
         ctx.drawImage(image, data.lastOffset.width, data.lastOffset.height);
@@ -453,6 +502,7 @@ export const createDynamictPropSpriteAtlas = async () => {
             oh: data.maxHeight.size - (image.height + data.lastOffset.height),
             w: image.width,
             h: image.height,
+            imageWidth: image.width,
         };
 
         data.lastOffset.width += image.width;
@@ -482,9 +532,9 @@ export const createDynamictPropSpriteAtlas = async () => {
 export const createAllAtlas = async () => {
     return await Promise.all([
         createCharSpriteAtlas(),
-        //createPropsSpriteAtlas(),
-        //createBackgroundAtlas(),
-        //createDynamictPropSpriteAtlas(),
+        createPropsSpriteAtlas(),
+        createBackgroundAtlas(),
+        createDynamictPropSpriteAtlas(),
     ]);
 };
 
@@ -496,5 +546,4 @@ export default {
     createAllAtlas,
     createCharSpriteAtlas,
     createPropsSpriteAtlas,
-
 };

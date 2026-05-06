@@ -1,6 +1,31 @@
-import { canvas, gl, createTexture, submit2DArrayImage, update2DArrayImage, vertexAttribPointer } from './engine.js';
+//@ts-check
+
+import engine, { canvas, gl, createTexture, submit2DArrayImage, update2DArrayImage, vertexAttribPointer } from './engine.js';
 import { atlases } from './atlasManager.js';
 
+/** @typedef {{x: number, y: number, w: number, h: number, xw?: number, yh?: number}} tmp */
+
+/**
+ * @typedef {Object} FBOData
+ * @property {WebGLTexture} texture
+ * @property {number} textureIndex
+ * @property {WebGLTexture} [normal]
+ * @property {number} [normalIndex]
+ * @property {WebGLTexture} [objectInfo]
+ * @property {number} [objectInfoIndex]
+ * @property {WebGLTexture} [objectIdTexture]
+ * @property {number} [objectIdTextureIndex]
+ * @property {WebGLRenderbuffer} [renderbuffer]
+ * @property {WebGLFramebuffer} [fbo]
+ * @property {Function} [bind]
+ * @property {Function} [clearAndListen]
+ * @property {Function} [unbind]
+ */
+
+/**
+ * @param {{pos: tmp, tc: tmp}} param0 
+ * @returns {Array<number>}
+ */
 function getPosition({ pos, tc },) {
     pos.xw = pos.x + pos.w;
     pos.yh = pos.y + pos.h;
@@ -18,6 +43,7 @@ function getPosition({ pos, tc },) {
     ];
 }
 
+/** @param {import('./engine.js').Program} pd */
 async function setupCharDrawer(pd) {
     gl.useProgram(pd.program);
 
@@ -87,6 +113,7 @@ async function setupCharDrawer(pd) {
         { local: pd.locals.a.isLightSource, size: 1, type: gl.FLOAT, normalized: false },
         { local: pd.locals.a.rotation, size: 1, type: gl.FLOAT, normalized: false },
         { local: pd.locals.a.replaceColor, size: 4, type: gl.FLOAT, normalized: false },
+        { local: pd.locals.a.rotationOffset, size: 2, type: gl.FLOAT, normalized: false },
     ]);
 
     gl.vertexAttribDivisor(pd.locals.a.positionOffset, 1);
@@ -99,6 +126,7 @@ async function setupCharDrawer(pd) {
     gl.vertexAttribDivisor(pd.locals.a.isLightSource, 1);
     gl.vertexAttribDivisor(pd.locals.a.rotation, 1);
     gl.vertexAttribDivisor(pd.locals.a.replaceColor, 1);
+    gl.vertexAttribDivisor(pd.locals.a.rotationOffset, 1);
 
     gl.enableVertexAttribArray(pd.locals.a.positionOffset);
     gl.enableVertexAttribArray(pd.locals.a.frameOffset);
@@ -110,6 +138,7 @@ async function setupCharDrawer(pd) {
     gl.enableVertexAttribArray(pd.locals.a.isLightSource);
     gl.enableVertexAttribArray(pd.locals.a.rotation);
     gl.enableVertexAttribArray(pd.locals.a.replaceColor);
+    gl.enableVertexAttribArray(pd.locals.a.rotationOffset);
 
     gl.bindVertexArray(null);
 
@@ -126,13 +155,14 @@ async function setupCharDrawer(pd) {
     };
 }
 
+/** @param {import('./engine.js').Program} pd */
 async function setupPropDrawer(pd) {
     gl.useProgram(pd.program);
 
     const atlas = atlases['world_prop'];
 
     pd.transformData = new Float32Array([]);
-    pd.data = new Float32Array([]);
+    //pd.data = new Float32Array([]);
 
     //gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
 
@@ -217,6 +247,7 @@ async function setupPropDrawer(pd) {
     };
 }
 
+/** @param {import('./engine.js').Program} pd */
 async function setupDynamicPropDrawer(pd) {
     gl.useProgram(pd.program);
 
@@ -335,6 +366,7 @@ async function setupDynamicPropDrawer(pd) {
     };
 }
 
+/** @param {import('./engine.js').Program} pd */
 async function setupBackgroundDrawer(pd) {
     gl.useProgram(pd.program);
 
@@ -347,7 +379,7 @@ async function setupBackgroundDrawer(pd) {
     pd.transformData = new Float32Array([
         0, 0,
         size.w, 0,
-        size.w * 2, 0,
+        //size.w * 2, 0,
     ]);
 
     pd.data = new Float32Array([
@@ -421,7 +453,9 @@ async function setupBackgroundDrawer(pd) {
     };
 }
 
+/** @param {import('./engine.js').Program} pd @param {FBOData} fbo @param {FBOData} fboLight @param {FBOData} backgroundFBO */
 async function setupCenarioDrawer(pd, fbo, fboLight, backgroundFBO) {
+    if (!fbo.normalIndex || !fbo.objectInfoIndex) return;
     gl.useProgram(pd.program);
 
     const data = new Float32Array([
@@ -462,19 +496,46 @@ async function setupCenarioDrawer(pd, fbo, fboLight, backgroundFBO) {
     };
 }
 
+/** @param {import('./engine.js').Program} pd  @param {FBOData} fbo */
 async function setupRioDrawer(pd, fbo) {
     gl.useProgram(pd.program);
 
     gl.uniform1i(pd.locals.u.sampler, fbo.textureIndex);
 
+    /*
     const pos = {
         x: 0, w: 1920,
         y: 0, h: 25,
     };
-
+    
     const image = {
         x: 0, w: 1920,
         y: 40, h: 100,
+    }
+    */
+
+    /*const pos = {
+        x: 0, w: engine.canvas.width,
+        y: 0, h: engine.canvas.height / 7.6,
+    };
+
+    const image = {
+        x: 0, w: engine.canvas.width,
+        y: engine.canvas.height / 4.75, h: engine.canvas.height / 1.9,
+    }*/
+
+    const waterPxHeight = 10;
+    const fromBottom = waterPxHeight + 5;
+    const fromTop = fromBottom + waterPxHeight;
+
+    const pos = {
+        x: 0, w: canvas.width,
+        y: 0, h: waterPxHeight,
+    };
+
+    const image = {
+        x: 0, w: canvas.width,
+        y: fromBottom, h: fromTop,
     }
 
     pos.x = (pos.x / canvas.width) * 2 - 1;
@@ -493,10 +554,13 @@ async function setupRioDrawer(pd, fbo) {
         pos.w, pos.y, image.w, image.h,
     ]);
 
+    pd.transformData = data;
+
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
 
     const buffer = gl.createBuffer();
+    pd.transformBuffer = buffer;
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
     vertexAttribPointer([
@@ -514,6 +578,7 @@ async function setupRioDrawer(pd, fbo) {
     };
 }
 
+/** @param {import('./engine.js').Program} pd  @param {FBOData} fbo */
 async function setupRawDrawer(pd, fbo) {
     gl.useProgram(pd.program);
 
@@ -566,7 +631,9 @@ async function setupRawDrawer(pd, fbo) {
     };
 }
 
+/** @param {import('./engine.js').Program} pd  @param {FBOData} fbo */
 async function setupLightDrawer(pd, fbo) {
+    if (!fbo.normalIndex || !fbo.objectInfoIndex) return;
     gl.useProgram(pd.program);
 
     gl.uniform1i(pd.locals.u.samplerNormal, fbo.normalIndex);
@@ -636,6 +703,7 @@ async function setupLightDrawer(pd, fbo) {
     };
 }
 
+/** @returns {FBOData} */
 function setupPropCenarioFBO() {
     const [texture, textureIndex] = createTexture(gl, gl.TEXTURE_2D);
     gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, canvas.width, canvas.height);
@@ -712,6 +780,7 @@ function setupPropCenarioFBO() {
     }
 }
 
+/** @returns {FBOData} */
 function setupBackgroundFBO() {
     const [texture, textureIndex] = createTexture(gl, gl.TEXTURE_2D);
     gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, canvas.width, canvas.height);
@@ -756,6 +825,7 @@ function setupBackgroundFBO() {
     }
 }
 
+/** @returns {FBOData} */
 function setupCenarioFBO() {
     const [texture, textureIndex] = createTexture(gl, gl.TEXTURE_2D);
     gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, canvas.width, canvas.height);
@@ -800,6 +870,7 @@ function setupCenarioFBO() {
     }
 }
 
+/** @returns {FBOData} */
 function setupLightFBO() {
     const [texture, textureIndex] = createTexture(gl, gl.TEXTURE_2D);
     gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, canvas.width, canvas.height);

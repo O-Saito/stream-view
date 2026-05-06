@@ -22,8 +22,7 @@
                 "posOffset": {
                   "x": -2,
                   "y": -4
-                },
-                "exceptions": []
+                }
               }
             },
             {
@@ -55,21 +54,6 @@
                   "x": 0
                 }
               }
-            },
-            {
-              "keys": {
-                "helmet": [
-                  "/char/props/helmet/cutelo.png"
-                ]
-              },
-              "replaceParent": false,
-              "part": {
-                "sets": [],
-                "posOffset": {
-                  "x": 0,
-                  "y": -1
-                }
-              }
             }
           ]
         }
@@ -78,35 +62,15 @@
         "default": {
           "sets": [],
           "posOffset": {
-            "y": 11,
-            "x": 3
-          },
-          "exceptions": [
-            {
-              "keys": {
-                "face": [
-                  "/char/props-especial/face/moustache.png"
-                ]
-              },
-              "replaceParent": false,
-              "part": {
-                "sets": [],
-                "posOffset": {
-                  "x": -1,
-                  "y": -1
-                }
-              }
-            }
-          ]
+            "y": -3,
+            "x": 4
+          }
         }
       },
       "head": {
         "default": {
           "texture": "/default.png",
-          "sets": [],
-          "posOffset": {
-            "x": 0
-          }
+          "sets": []
         }
       },
       "body": {
@@ -236,24 +200,21 @@
               "posOffset": {
                 "y": 0,
                 "x": 0
-              },
-              "useSpriteFrame": 0
+              }
             },
             {
               "keyframe": 20,
               "posOffset": {
                 "y": 1,
                 "x": -3
-              },
-              "useSpriteFrame": 0
+              }
             },
             {
               "keyframe": 35,
               "posOffset": {
                 "y": -1,
                 "x": 2
-              },
-              "useSpriteFrame": 0
+              }
             }
           ],
           "texture": "/attack.png",
@@ -270,8 +231,7 @@
               "posOffset": {
                 "x": 0,
                 "y": 0
-              },
-              "useSpriteFrame": 0
+              }
             },
             {
               "keyframe": 35,
@@ -350,27 +310,23 @@
               "posOffset": {
                 "y": 2,
                 "x": 0
-              },
-              "useSpriteFrame": 0
+              }
             },
             {
               "keyframe": 35,
               "posOffset": {
                 "y": 0
-              },
-              "useSpriteFrame": 0
+              }
             },
             {
-              "keyframe": 38,
-              "useSpriteFrame": 0
+              "keyframe": 38
             },
             {
               "keyframe": 0,
               "posOffset": {
                 "x": -3,
                 "y": 2
-              },
-              "useSpriteFrame": 0
+              }
             }
           ],
           "posOffset": {
@@ -386,27 +342,23 @@
               "keyframe": 20,
               "posOffset": {
                 "y": 0
-              },
-              "useSpriteFrame": 0
+              }
             },
             {
               "keyframe": 35,
               "posOffset": {
                 "y": 0
-              },
-              "useSpriteFrame": 0
+              }
             },
             {
-              "keyframe": 38,
-              "useSpriteFrame": 0
+              "keyframe": 38
             },
             {
               "keyframe": 0,
               "posOffset": {
                 "x": -3,
                 "y": 3
-              },
-              "useSpriteFrame": 0
+              }
             }
           ],
           "posOffset": {
@@ -419,8 +371,7 @@
         "default": {
           "sets": [
             {
-              "keyframe": 20,
-              "useSpriteFrame": 0
+              "keyframe": 20
             },
             {
               "keyframe": 35,
@@ -458,8 +409,7 @@
         "default": {
           "sets": [
             {
-              "keyframe": 20,
-              "useSpriteFrame": 0
+              "keyframe": 20
             },
             {
               "keyframe": 35,
@@ -497,8 +447,7 @@
         "default": {
           "sets": [
             {
-              "keyframe": 20,
-              "useSpriteFrame": 0
+              "keyframe": 20
             },
             {
               "keyframe": 35,
@@ -510,8 +459,7 @@
             },
             {
               "keyframe": 0,
-              "texture": "/jump.png",
-              "useSpriteFrame": 0
+              "texture": "/jump.png"
             }
           ],
           "texture": "/attack.png"
@@ -640,44 +588,14 @@
             }
           ],
           "posOffset": {
-            "y": 18,
-            "x": 2
+            "y": 13,
+            "x": 0
           },
           "exceptions": [
             {
               "keys": {
                 "helmet": [
-                  "/char/props/helmet/coroa.png"
-                ]
-              },
-              "replaceParent": false,
-              "part": {
-                "sets": [],
-                "posOffset": {
-                  "x": -2,
-                  "y": -4
-                }
-              }
-            },
-            {
-              "keys": {
-                "helmet": [
-                  "/char/props/helmet/ninja.png"
-                ]
-              },
-              "replaceParent": false,
-              "part": {
-                "sets": [],
-                "posOffset": {
-                  "x": -1,
-                  "y": -6
-                }
-              }
-            },
-            {
-              "keys": {
-                "helmet": [
-                  "/char/props/helmet/mugi.png"
+                  "/char/props/helmet/sjins.png"
                 ]
               },
               "replaceParent": false,
@@ -685,20 +603,6 @@
                 "sets": [],
                 "posOffset": {
                   "x": 0,
-                  "y": -4
-                }
-              }
-            },
-            {
-              "keys": {
-                "helmet": [
-                  "/char/props/helmet/cutelo.png"
-                ]
-              },
-              "replaceParent": false,
-              "part": {
-                "sets": [],
-                "posOffset": {
                   "y": -1
                 }
               }
@@ -719,26 +623,9 @@
             }
           ],
           "posOffset": {
-            "x": 3,
-            "y": 11
-          },
-          "exceptions": [
-            {
-              "keys": {
-                "face": [
-                  "/char/props-especial/face/moustache.png"
-                ]
-              },
-              "replaceParent": false,
-              "part": {
-                "sets": [],
-                "posOffset": {
-                  "x": -1,
-                  "y": -1
-                }
-              }
-            }
-          ]
+            "x": 4,
+            "y": -3
+          }
         }
       },
       "head": {

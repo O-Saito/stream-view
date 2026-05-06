@@ -1,0 +1,145 @@
+{
+    "props": [
+        {
+            "type": "prop",
+            "texture": "/world/natural/arvore.png",
+            "pos": {
+                "x": 200,
+                "y": 22
+            },
+            "size": {
+                "width": 71,
+                "height": 91
+            },
+            "depth": 0.89
+        },
+        {
+            "type": "prop",
+            "texture": "/world/natural/moita.png",
+            "pos": {
+                "x": 163,
+                "y": 2
+            },
+            "size": {
+                "width": 797,
+                "height": 170
+            },
+            "depth": 0.91
+        },
+        {
+            "type": "prop",
+            "texture": "/world/natural/moita2.png",
+            "pos": {
+                "x": 0,
+                "y": 22
+            },
+            "size": {
+                "width": 412,
+                "height": 94
+            },
+            "depth": 0.9
+        },
+        {
+            "type": "fogueira",
+            "pos": {
+                "x": 533,
+                "y": 23
+            },
+            "size": {
+                "width": 54,
+                "height": 54
+            },
+            "depth": 0.9
+        },
+        {
+            "type": "prop",
+            "texture": "/world/props/casa.png",
+            "pos": {
+                "x": 0,
+                "y": 22
+            },
+            "size": {
+                "width": 264,
+                "height": 142
+            },
+            "depth": 0.88
+        },
+        {
+            "type": "Wagon",
+            "texture": "/world/props/carroca.png",
+            "pos": {
+                "x": -197,
+                "y": 22
+            },
+            "size": {
+                "width": 0,
+                "height": 0
+            },
+            "depth": 0.9
+        },
+        {
+            "type": "portal",
+            "pos": {
+                "x": 750,
+                "y": 17
+            },
+            "size": {
+                "width": 62,
+                "height": 42
+            },
+            "depth": 0.86
+        },
+        {
+            "type": "prop",
+            "texture": "/world/natural/chao2.png",
+            "pos": {
+                "x": 0,
+                "y": 15
+            },
+            "size": {
+                "width": 797,
+                "height": 7
+            },
+            "depth": 0.9
+        },
+        {
+            "type": "prop",
+            "texture": "/world/natural/chao2.png",
+            "pos": {
+                "x": 797,
+                "y": 15
+            },
+            "size": {
+                "width": 797,
+                "height": 7
+            },
+            "depth": 0.9
+        },
+        {
+            "type": "prop",
+            "texture": "/world/natural/grama.png",
+            "pos": {
+                "x": 0,
+                "y": 22
+            },
+            "size": {
+                "width": 797,
+                "height": 8
+            },
+            "depth": 0.9
+        },
+        {
+            "type": "prop",
+            "texture": "/world/natural/grama.png",
+            "pos": {
+                "x": 797,
+                "y": 22
+            },
+            "size": {
+                "width": 797,
+                "height": 8
+            },
+            "depth": 0.9
+        }
+    ]
+}

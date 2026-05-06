@@ -18,6 +18,7 @@ in float aObjectId;
 in float aIsLightSource;
 in float aRotation;
 in vec4 aReplaceColor;
+in vec2 aRotationOffset;
 
 out vec2 vResolution;
 out float vAnimationLayer;
@@ -58,7 +59,7 @@ void main()
 
     vec2 localPos = aPosition - spriteCenter;
     //vec2 rotatedPos = apply_rotation(localPos, vec2(0.0), aRotation);
-    vec2 rotatedPos = apply_texel_rotation(localPos, vec2(0.0), aRotation, aSpriteSize);
+    vec2 rotatedPos = apply_texel_rotation(localPos, aRotationOffset, aRotation, aSpriteSize);
     vec2 finalPos = rotatedPos + spriteCenter + aPositionOffset;
     vec2 snappedPos = snap_to_pixel(finalPos, uResolution);
     vec2 correctPos = pixel_to_shader_pos(snappedPos, uResolution);
@@ -169,6 +170,7 @@ const getAttributes = (gl, p) => {
         isLightSource: gl.getAttribLocation(p, 'aIsLightSource'),
         rotation: gl.getAttribLocation(p, 'aRotation'),
         replaceColor: gl.getAttribLocation(p, 'aReplaceColor'),
+        rotationOffset: gl.getAttribLocation(p, 'aRotationOffset'),
     }
 };
 

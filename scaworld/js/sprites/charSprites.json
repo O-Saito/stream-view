@@ -67,10 +67,17 @@
     "/char/props/helmet/blackpower.png",
     "/char/props/helmet/bruxo.png",
     "/char/props/helmet/coroa.png",
+    "/char/props/helmet/coroa2.png",
     "/char/props/helmet/mugi.png",
     "/char/props/helmet/sjins.png",
     "/char/props/helmet/ninja.png",
+    "/char/props/helmet/aluminio.png",
+    "/char/props/helmet/banguela.png",
+    "/char/props/helmet/cutelo.png",
+    "/char/props/helmet/creeper.png",
 
+    "/char/props/face/monoculo.png",
+    
     "/char/props/chest/leather/default.png",
     "/char/props/chest/leather/attack.png",
     "/char/props/chest/leather/attackbow.png",

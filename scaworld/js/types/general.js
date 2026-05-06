@@ -1,3 +1,4 @@
+//@ts-check
 
 /**
 * @typedef {Object} Position
@@ -13,6 +14,12 @@
 * @property {number} y
 * @property {number} ax
 * @property {number} ay
+*
+* @typedef {Object} RGBA
+* @property {number} r
+* @property {number} g
+* @property {number} b
+* @property {number} a
 */
 
 export default {};

@@ -1,0 +1,812 @@
+<style>
+    @font-face {
+        font-family: 'customFont';
+        src: url('/Kingthings_Exeter.ttf');
+    }
+
+    * {
+        image-rendering: pixelated;
+        box-sizing: border-box;
+        margin: 0;
+    }
+
+    html,
+    body,
+    canvas {
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+        transform: scale(1) translateZ(0);
+        will-change: transform;
+        backface-visibility: hidden;
+        perspective: 1px;
+    }
+
+    canvas {
+        display: block;
+        image-rendering: pixelated !important;
+        /* Modern browsers */
+        image-rendering: crisp-edges;
+        /* Firefox */
+        image-rendering: -webkit-optimize-contrast;
+        /* Safari */
+        image-rendering: -moz-crisp-edges;
+        /* Firefox */
+        image-rendering: -o-crisp-edges;
+        /* Opera */
+        transform: translateZ(0);
+        /* Força o CEF a usar escala exata */
+        will-change: transform;
+        /* Otimização para CEF */
+    }
+
+    .html-main {
+        width: 100%;
+        height: 100%;
+    }
+
+    .html-canvas {
+        width: 100%;
+        height: 100%;
+    }
+
+    .layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    .element {
+        position: absolute;
+        background-size: 100% 100%;
+    }
+
+    .element.canvas {
+        width: 100%;
+        height: 100%;
+    }
+
+    .floor {
+        width: 100%;
+        height: 100%;
+        /*background-image: url(/chao.png);
+        background-size: auto 15px;
+        background-repeat: repeat-x;
+        background-position: right 145px;*/
+    }
+
+    .water {
+        width: 100%;
+        height: 100%;
+        top: 12px;
+        background-image: url(/agua/agua-parada.png);
+    }
+
+    .fps {
+        top: 0;
+        color: red;
+    }
+
+    .time {
+        top: 0;
+        left: 30px;
+        color: red;
+    }
+
+    .size {
+        top: 30px;
+        color: red;
+    }
+
+    #uiCanvas {
+        position: relative;
+    }
+
+    #parts-data input[type="number"] {
+        max-width: 60px;
+    }
+
+    #ending {
+        position: absolute;
+        top: 0%;
+        left: 50%;
+        transform: translate(-50%, 0%);
+        font-family: 'customFont', cursive;
+        font-size: 48px;
+        color: white;
+        text-shadow: 2px 2px 0 #000, -2px 2px 0 #000, 2px -2px 0 #000, -2px -2px 0 #000;
+        max-width: 900;
+        max-height: 500;
+        text-align: center;
+    }
+
+    #ending-body {
+        top: 900px;
+        position: relative;
+        text-align: center;
+        position: relative;
+        white-space: nowrap;
+    }
+
+    .ending-text {
+        position: relative;
+        left: 50%;
+        width: fit-content;
+        transform: translateX(-50%);
+    }
+</style>
+
+<div class="html-main" style="height: 200px;">
+    <div class="background-ambiente">
+        <div class="html-canvas layer" style="height: 200px;">
+            <div class="element floor" style="height: 200px;"></div>
+            <canvas id="gameCanvas" class="element canvas"></canvas>
+            <canvas id="uiCanvas" class="element canvas"></canvas>
+            <div style="width: 960px;height: 540px; overflow: hidden;">
+
+                <div id="ending">
+                    <div id="ending-body">
+                    </div>
+                </div>
+
+            </div>
+            <div class="element fps"></div>
+            <div class="element time"></div>
+            <div class="element size"></div>
+        </div>
+    </div>
+</div>
+
+<div id="show-emotes" style="display: none;"></div>
+
+<script type="module">
+    //@ts-check
+    import w from '../wrapper.js'
+    import engine from '/scaworld/js/engine.js';
+    import world from '/scaworld/js/world.js';
+    import { atlases, charDefinitions, propsDefinition, dynamicPropDefinition, createAllAtlas } from '/scaworld/js/atlasManager.js';
+    import charAnimatior from '/scaworld/js/systems/characterAnimator.js';
+    import character from '/scaworld/js/elements/character.js';
+    import elements from '/scaworld/js/elements.js';
+    import dsvSystem from '/scaworld/js/dsvsystem.js';
+    import audioManager from '/scaworld/js/audioManager.js';
+
+    engine.resizeCanvas(960, 540);
+    const lblFps = document.getElementsByClassName('fps')[0];
+    const canvas = engine.canvas;
+    const gl = engine.gl;
+    const programData = engine.programData;
+
+    window['world'] = world;
+
+    const riodefs = {
+        "pos": {
+            "x": 0,
+            "y": 0,
+            "w": 960,
+            "h": world.getFloorY() - 7
+        },
+        "image": {
+            "x": 0,
+            "y": world.getFloorY() + 5,
+            "h": world.getFloorY()
+        }
+    };
+
+    window['bg'] = -350;
+
+    async function loadJSON(url) {
+        const r = await fetch(url);
+        const text = await r.text();
+        return JSON.parse(text);
+    }
+
+    console.log(atlases);
+
+    window['spawnEmote'] = (e) => {
+        let t = '';
+        let childrens = [];
+        if (e == 1) {
+            t = "https://static-cdn.jtvnw.net/emoticons/v2/emotesv2_dcd06b30a5c24f6eb871e8f5edbd44f7/default/light/2.0";
+        }
+        if (e == 2) {
+            t = "https://static-cdn.jtvnw.net/emoticons/v2/191764/default/light/2.0";
+            childrens.push('https://static-cdn.jtvnw.net/emoticons/v2/191762/default/light/2.0');
+            childrens.push('https://static-cdn.jtvnw.net/emoticons/v2/191763/default/light/2.0');
+            childrens.push('https://static-cdn.jtvnw.net/emoticons/v2/191763/default/light/2.0');
+            childrens.push('https://static-cdn.jtvnw.net/emoticons/v2/191763/default/light/2.0');
+            childrens.push('https://static-cdn.jtvnw.net/emoticons/v2/191763/default/light/2.0');
+            childrens.push('https://static-cdn.jtvnw.net/emoticons/v2/191763/default/light/2.0');
+            childrens.push('https://static-cdn.jtvnw.net/emoticons/v2/191767/default/light/2.0');
+        }
+        elements.addDynamic({ type: 'emote', position: { x: 0, y: 0 }, size: { width: 32, height: 32 }, texture: "https://static-cdn.jtvnw.net/emoticons/v2/emotesv2_dcd06b30a5c24f6eb871e8f5edbd44f7/default/light/2.0", depth: 0.2 });
+        //propConstruct.createDynamic("Emote", { position: { x: canvas.width, y: 100 }, texture: t, childrens: childrens, depth: engine.options.charDepth + 0.1 }, game.drawers['dyprop']);
+    };
+
+    /** @type {null|Function} */
+    let executeWhenLoaded = null;
+    w.on('init', () => {
+        let setupDone = false;
+        //alert("teste");
+        w.ignoreBroadcast();
+        const scaworld = w.subscribe('scaworld.lua');
+        if (!scaworld) {
+            alert("SCaWorld não encontrado!");
+            return;
+        }
+
+        window['debug'] = () => { scaworld.send('debug', {}); }
+        scaworld.on('debug', (data) => {
+            console.log("DEBUG DATA");
+            console.log(data);
+        });
+
+        scaworld.on('setup', (data) => {
+            //scaworld.send('reset-preset', {});
+            if (setupDone) return;
+            setupDone = true;
+
+            /*if (data.save) {
+
+                const objectToArray = (obj) => {
+                    const arr = [];
+                    Object.getOwnPropertyNames(obj).forEach(x => {
+                        arr.push(x);
+                    });
+                    return arr;
+                }
+
+                const save = data.save;
+                save.dyelement = objectToArray(save.dyelements);
+                save.elements = objectToArray(save.elements);
+                save.users = objectToArray(save.users);
+                world.load(save);
+                return;
+            }*/
+
+            console.log('setup', data);
+            world.time.hour = data.currentTime / 60;
+            if (data.userList) {
+                Object.getOwnPropertyNames(data.userList).forEach((key) => {
+                    character.addCharacter({ pos: { x: 0, y: 0 }, enterPortal: true, userData: data.userList[key] });
+                });
+            }
+        });
+
+        scaworld.on('world-time', (data) => { world.time.hour = data.time / 60; });
+
+        /*scaworld.on('duel-request', (data) => {
+            const notfound = game.arena.startDuel(data.duel.users, data.id, (winnersId) => {
+                scaworld.send('duel-ended', { id: data.id, winners: winnersId });
+            });
+            if (notfound) {
+                scaworld.send('duel-request-user-not-found', { id: data.id, users: notfound });
+                return;
+            }
+            scaworld.send('duel-request-acknowledge', { id: data.id });
+        });*/
+
+        /*scaworld.on('viewer-action', (data) => {
+            console.log('viewer-action', data);
+            game.userCommand(data.user, data.argument);
+        });*/
+
+        scaworld.on('viewer-enter-by-portal', (data) => {
+            console.log('viewer-enter-by-portal', data);
+            character.addCharacter({ pos: { x: 0, y: 0 }, enterPortal: true, userData: data });
+        });
+
+        scaworld.on('viewer-enter-by-wagon', (data) => {
+            console.log('viewer-enter-by-wagon', data);
+            character.addCharacter({ pos: { x: 0, y: 0 }, enterPortal: false, enterByWagon: true, userData: data });
+        });
+
+        /*scaworld.on('exit-with-portal', data => {
+            console.log('exit-with-portal', data);
+            const char = game.getChar(data.userId);
+            if (!char) return;
+            Portal.spawnManager.makeDespawn('char', char);
+        });*/
+
+        /*scaworld.on('viewer-die', (data) => {
+            const char = game.getChar(data.userId);
+            if (!char) return;
+            char.die();
+        });*/
+
+        scaworld.on('loaded-viewers', (data) => {
+            console.log('loaded-viewers', data);
+        })
+
+        scaworld.on('viewer-change-direction', (data) => {
+            console.log('viewer-change-direction', data);
+        });
+
+        scaworld.on('change-outfit', (data) => {
+            console.log('change-outfit', data);
+            const char = world.getUsers().find(x => x.components?.userData?.userId == data.userId);// game.getChar(data.userId);
+            if (!char) {
+                console.log('USER NOT FOUND', data);
+                return;
+            }
+            char.components.outfitrequest = data.preset;
+        })
+
+        scaworld.on('viewer-message', (data) => {
+            console.log('viewer-message', data);
+            const text = data.Message;
+
+            const emotes = [];
+            const emoteMap = w.getEmotes();
+            text
+                .split(/\s+/)
+                .forEach(word => {
+                    if (emoteMap[word])
+                        emotes.push(emoteMap[word])
+                });
+
+            if (data.Source == "twitch" && data.Metadata) {
+                let emotesMetadata = data.Metadata.emotes.split('/')
+                if (emotesMetadata && emotesMetadata[0] != '') {
+                    emotesMetadata.forEach(x => {
+                        let v = x.split(':');
+                        let id = v[0];
+                        let url = `https://static-cdn.jtvnw.net/emoticons/v2/${id}/default/light/1.0`;
+                        emotes.push(url);
+                    });
+                }
+            }
+
+            emotes.forEach(e => {
+                if (!e || e == "") return;
+                elements.addDynamic({ type: 'emote', position: { x: 0, y: 0 }, size: { width: 32, height: 32 }, texture: e, depth: 0.2 });
+            });
+            // EMOTES
+            //const t = data.emotes.filter(x => x != null).map(x => x.url);
+            //propConstruct.createDynamic("Emote", { position: { x: canvas.width, y: 100 }, texture: t[0], childrens: t.length <= 1 ? [] : t.slice(1, t.length), depth: engine.options.charDepth + 0.1 }, game.drawers['dyprop']);
+        });
+
+        scaworld.on('sign-init', (data) => {
+            console.log('sign-init', data);
+        });
+
+        scaworld.on('sign-change', (data) => {
+            console.log('sign-change', data);
+        });
+
+        scaworld.on('show-ending', (data) => {
+            // adicioar linhas
+            console.log("show-ending", data);
+            createEndingText(data);
+            startEnding();
+        });
+
+        scaworld.on('raid', (data) => {
+            console.log('raid', data);
+            audioManager.play('invasion');
+        });
+
+        /*scaworld.on('stream-raid', (data) => {
+            game.eventManager.startEvent('wave', { type: 'stream-raid', quantity: data.count, boss: { name: data.fromData.username } })
+        });*/
+
+        setInterval(() => {
+            scaworld.send('save', world);
+        }, 1000);
+
+        if (!executeWhenLoaded) {
+            executeWhenLoaded = () => {
+                scaworld.send('init', {});
+            }
+            return;
+        }
+        scaworld.send('init', {});
+    });
+    w.connect();
+
+    (async () => {
+
+        audioManager.load('invasion', '/audios/invasion.mp3');
+
+        console.log(`Canvas Width: ${canvas.width} / Height: ${canvas.height}`);
+
+        let floatingTime = 0;
+
+        const {
+            propCenarioFBO,
+            cenarioFBO,
+            backgroundFBO,
+            lightFBO,
+            charDrawer,
+            propDrawer,
+            backgroundDrawer,
+            cenarioDrawer,
+            rioDrawer,
+            rawDrawer,
+            dyPropDrawer,
+            lightDrawer,
+        } = await world.setup(gl);
+
+        //window.portal = game.getPropList().find(x => x.constructor.name == "Portal");
+
+        engine.on('everySecond', () => {
+            lblFps.innerHTML = engine.getFramerate();
+            if (Math.floor(Math.random() * 99) <= 7) {
+                //createProp('Nuvem', { pos: { x: -100, y: canvas.height - (Math.floor(Math.random() * 45) + 10) }, depth: 1 });
+            }
+        });
+
+        charAnimatior.loadSpritesData();
+
+        loadJSON("/scaworld/js/cenario/stream2.json").then(x => {
+            x.props.forEach(prop => {
+                if (prop.type == 'portal') {
+                    prop.pos.x = canvas.width - (prop.size.width * 2);
+                }
+                elements.addElement({ type: prop.type, position: { x: prop.pos.x, y: prop.pos.y }, size: prop.size, texture: prop.texture, depth: prop.depth });
+            });
+            //character.addCharacter({ pos: { x: 100, y: 38 }, enterPortal: true, userData: { name: "Teste" } });
+            //setTimeout(() => { character.addCharacter({ pos: { x: 100 / 2, y: 38 / 2 }, enterPortal: true }); }, 3500);
+        });
+        //elements.addElement({ type: "portal", position: { x: 100, y: 100 }, size: { width: 62, height: 42 } });
+        //elements.addElement({ type: "fogueira", position: { x: 150, y: 100 }, size: { width: 54, height: 54 } });
+        //elements.addElement({ type: "prop", position: { x: 200, y: 100 }, texture: '/world/props/casa.png', size: { width: 264, height: 142 } });
+
+        //character.addCharacter({});
+        /*set_interval(() => {
+            character.addCharacter({});
+        }, 1);*/
+
+        dsvSystem.register();
+
+        engine.on('everyFrame', () => {
+
+            world.process();
+            //character.process();
+            //elements.process();
+
+            const atlas = atlases['world_background'];
+            const size = { w: atlas.canvas.width, h: atlas.imageHeight };
+
+            const data = [];
+
+            const qtdToFillWidth = Math.ceil(canvas.width / size.w);
+            const qtdToFillHeight = Math.ceil(canvas.height / size.h) + 1;
+
+            const bgQtd = qtdToFillHeight * qtdToFillWidth;
+
+            for (let x = 0; x < qtdToFillWidth; x++) {
+                for (let y = 0; y < qtdToFillHeight; y++) {
+                    data.push(x * size.w); // x
+                    data.push((y * size.h) - canvas.height);//window['bg']); // y
+                }
+            }
+
+            programData.background.transformData = new Float32Array(data);
+
+            backgroundFBO.clearAndListen();
+
+            // DRAW BACKGROUND
+            gl.useProgram(programData.background.program);
+            gl.activeTexture(gl.TEXTURE0 + backgroundDrawer.atlasIndex);
+            gl.uniform1f(programData.background.locals.u.timeFactor, (world.time.hour / 12 > 1 ? (((world.time.hour / 12) - 2) * -1) : world.time.hour / 12));
+            gl.bindVertexArray(programData.background.vao);
+            gl.bindBuffer(gl.ARRAY_BUFFER, programData.background.transformBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, programData.background.transformData, gl.DYNAMIC_DRAW);
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, programData.background.transformData);
+            gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, bgQtd/*3*/);
+            gl.bindVertexArray(null);
+            // END DRAW BACKGROUND
+            backgroundFBO.unbind();
+
+            // CENARIO FBO
+            propCenarioFBO.clearAndListen();
+            // CENARIO FBO
+
+            // DRAW PROPS
+            gl.useProgram(programData.prop.program);
+            gl.activeTexture(gl.TEXTURE0 + propDrawer.atlasIndex);
+            gl.activeTexture(gl.TEXTURE0 + propDrawer.normalIndex);
+            gl.bindVertexArray(programData.prop.vao);
+            gl.bindBuffer(gl.ARRAY_BUFFER, programData.prop.transformBuffer);
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, programData.prop.transformData);
+            gl.drawArraysInstanced(gl.TRIANGLES, 0, 6 * world.getElements().length, 1);
+            gl.bindVertexArray(null);
+            // END DRAW PROPS
+
+            // DRAW DYPROPS
+            /**/gl.useProgram(programData.dyprop.program);
+            gl.activeTexture(gl.TEXTURE0 + dyPropDrawer.atlasIndex);
+            gl.bindVertexArray(programData.dyprop.vao);
+            gl.bindBuffer(gl.ARRAY_BUFFER, programData.dyprop.transformBuffer);
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, programData.dyprop.transformData);
+            gl.drawArraysInstanced(gl.TRIANGLES, 0, 6 * world.getDyElements().length, 1);
+            gl.bindVertexArray(null);
+            // END DRAW DYPROPS
+
+            // DRAW CHARS
+            gl.useProgram(programData.char.program);
+            gl.activeTexture(gl.TEXTURE0 + charDrawer.atlasIndex);
+            gl.activeTexture(gl.TEXTURE0 + charDrawer.normalIndex);
+            gl.bindVertexArray(programData.char.vao);
+            gl.bindBuffer(gl.ARRAY_BUFFER, programData.char.transformBuffer);
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, programData.char.transformData);
+            gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, world.getUsers().length * engine.countOfCharProps);
+            gl.bindVertexArray(null);
+            // END DRAW CHARS
+
+            // END CENARIO FBO
+            propCenarioFBO.unbind();
+            // END CENARIO FBO
+
+            if (world.getLightCount() != 0 && programData.light.transformBuffer.length != 0) {
+                /**/lightFBO.clearAndListen();
+                gl.enable(gl.BLEND);
+                gl.blendFunc(gl.ONE, gl.ONE);
+                gl.useProgram(programData.light.program);
+                gl.activeTexture(gl.TEXTURE0 + propCenarioFBO.normalIndex);
+                gl.bindTexture(gl.TEXTURE_2D, propCenarioFBO.normal);
+                gl.activeTexture(gl.TEXTURE0 + propCenarioFBO.objectInfoIndex);
+                gl.bindTexture(gl.TEXTURE_2D, propCenarioFBO.objectInfo);
+                gl.bindVertexArray(programData.light.vao);
+                gl.useProgram(programData.light.program);
+                gl.bindBuffer(gl.ARRAY_BUFFER, programData.light.transformBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, programData.light.transformData, gl.DYNAMIC_DRAW);
+                // gl.bindBuffer(gl.ARRAY_BUFFER, programData['light'].transformBuffer);
+                // gl.bufferData(gl.ARRAY_BUFFER, 0, programData['light'].transformData);
+                gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, world.getLightCount());
+                gl.bindVertexArray(null);
+                lightFBO.unbind();
+                gl.disable(gl.BLEND);
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+            }
+
+            // RIO FBO
+            cenarioFBO.clearAndListen();
+            // RIO FBO
+
+            gl.useProgram(programData.cenario.program);
+            gl.uniform3f(programData.cenario.locals.u.globalLightPosition, engine.globalLight.x, engine.globalLight.y, engine.globalLight.z);
+
+            gl.activeTexture(gl.TEXTURE0 + propCenarioFBO.textureIndex);
+            gl.bindTexture(gl.TEXTURE_2D, propCenarioFBO.texture);
+            gl.activeTexture(gl.TEXTURE0 + propCenarioFBO.normalIndex);
+            gl.bindTexture(gl.TEXTURE_2D, propCenarioFBO.normal);
+            gl.activeTexture(gl.TEXTURE0 + propCenarioFBO.objectInfoIndex);
+            gl.bindTexture(gl.TEXTURE_2D, propCenarioFBO.objectInfo);
+            gl.activeTexture(gl.TEXTURE0 + lightFBO.textureIndex);
+            gl.bindTexture(gl.TEXTURE_2D, lightFBO.texture);
+            gl.activeTexture(gl.TEXTURE0 + backgroundFBO.textureIndex);
+            gl.bindTexture(gl.TEXTURE_2D, backgroundFBO.texture);
+            gl.bindVertexArray(cenarioDrawer.vao);
+            gl.enable(gl.BLEND);
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+            gl.disable(gl.BLEND);
+            gl.bindTexture(gl.TEXTURE_2D, null);
+            gl.bindVertexArray(null);
+
+            // END RIO FBO
+            cenarioFBO.unbind();
+            // END RIO FBO
+
+            gl.enable(gl.BLEND);
+            gl.activeTexture(gl.TEXTURE0 + cenarioFBO.textureIndex);
+            gl.bindTexture(gl.TEXTURE_2D, cenarioFBO.texture);
+
+            gl.useProgram(programData.raw.program);
+            // gl.activeTexture(gl.TEXTURE0 + cenarioDrawer.normalIndex);
+            // gl.bindTexture(gl.TEXTURE_2D, cenarioDrawer.normal);
+            gl.bindVertexArray(cenarioDrawer.vao);
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+            gl.bindVertexArray(null);
+
+            // Transformar o rio
+            const parse = (pos) => {
+                const x = (pos.x / engine.canvas.width) * 2 - 1;
+                const y = (pos.y / engine.canvas.height) * 2 - 1;
+                const w = (pos.w / engine.canvas.width) * 2 - 1;
+                const h = (pos.h / engine.canvas.height) * 2 - 1;
+                return { x: x, y: y, w: w, h: h };
+            }
+
+            const parseImage = (pos) => {
+                const x = (pos.x / engine.canvas.width);
+                const y = (pos.y / engine.canvas.height);
+                const w = (pos.w / engine.canvas.width);
+                const h = (pos.h / engine.canvas.height);
+                return { x: x, y: y, w: w, h: h };
+            }
+
+            let { pos, image } = riodefs;
+            //pos.h = pos.h - canvas.height;
+            //pos = parse(pos);
+            //image = parse(image);
+
+            image = { ...image };
+
+            image.w = pos.w;
+            image.h = image.h + image.y;
+
+            image.y = image.h ^ image.y;
+            image.h = image.h ^ image.y;
+
+            const nPos = parse(pos);
+            const nImage = parseImage(image);
+
+            /// Transformar o rio
+            // DESENHAR O RIO
+            gl.useProgram(programData.rio.program);
+            gl.uniform1f(programData.rio.locals.u.time, floatingTime);
+            gl.activeTexture(gl.TEXTURE0 + cenarioFBO.textureIndex);
+            gl.bindTexture(gl.TEXTURE_2D, cenarioFBO.texture);
+            //gl.activeTexture(gl.TEXTURE0 + cenarioDrawer.normalIndex);
+            //gl.bindTexture(gl.TEXTURE_2D, cenarioDrawer.normal);
+            gl.bindVertexArray(rioDrawer.vao);
+
+            programData.rio.transformData[0] = nPos.x;
+            programData.rio.transformData[1] = nPos.h;
+            programData.rio.transformData[2] = nImage.x;
+            programData.rio.transformData[3] = nImage.h;
+
+            programData.rio.transformData[4] = nPos.x;
+            programData.rio.transformData[5] = nPos.y;
+            programData.rio.transformData[6] = nImage.x;
+            programData.rio.transformData[7] = nImage.y;
+
+            programData.rio.transformData[8] = nPos.w;
+            programData.rio.transformData[9] = nPos.h;
+            programData.rio.transformData[10] = nImage.w;
+            programData.rio.transformData[11] = nImage.h;
+
+            programData.rio.transformData[12] = nPos.w;
+            programData.rio.transformData[13] = nPos.y;
+            programData.rio.transformData[14] = nImage.w;
+            programData.rio.transformData[15] = nImage.y;
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, programData.rio.transformBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, programData.rio.transformData, gl.STATIC_DRAW);
+
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+            gl.disable(gl.BLEND);
+            gl.bindTexture(gl.TEXTURE_2D, null);
+            gl.bindVertexArray(null);
+
+            floatingTime += 0.001;
+        });
+
+        if (executeWhenLoaded != null)
+            //@ts-ignore
+            executeWhenLoaded();
+        executeWhenLoaded = () => { };
+    })();
+
+
+    function startEnding() {
+        const ending = document.getElementById('ending');
+        const endingBody = document.getElementById('ending-body');
+
+        const ps = endingBody.querySelectorAll('p');
+        for (let i = 0; i < ps.length; i++) {
+            const p = ps[i];
+            p.style.fontSize = `${3 + (i * 0.4)}cm`;
+        }
+        let currentPos = 15;
+        let reduce = 0.003;
+
+        setInterval(() => {
+            if (currentPos > -1.2) {
+                currentPos -= 0.018;
+                endingBody.style.top = `${currentPos}cm`;
+            } else {
+                reduce = 0.0045;
+            }
+
+            for (let i = 0; i < ps.length; i++) {
+                const p = ps[i];
+                p.style.fontSize = `${parseFloat(p.style.fontSize.replace('cm', '')) - reduce}cm`;
+            }
+        }, 1000 / 60);
+    }
+
+    function createEndingText(data) {
+        const endingBody = document.getElementById('ending-body');
+        endingBody.innerHTML = '';
+        const s = data.statistics;
+
+        const addtext = (...args) => {
+            const p = document.createElement('p');
+            p.classList.add('ending-text');
+            args.forEach(a => {
+                const span = document.createElement('span');
+                span.innerHTML = a;
+                p.appendChild(span);
+                p.appendChild(document.createElement('br'));
+            })
+            endingBody.appendChild(p);
+        }
+
+        addtext("TUDUM!");
+
+        addtext(`Com um total de`, `${s.total_messages_count} mensagens!`);
+        addtext(`Com um balanço de like/hate de`, `<b style="color: green;">${s.likes.total}</b>/<b style="color: red;">${s.hates.total}</b>`);
+
+        const f = Object.getOwnPropertyNames(s.follows);
+        if (f.length > 0) {
+            addtext(`Obrigado aos novos followers: `)
+            f.forEach(userId => {
+                addtext(`${s.follows[userId].name}`);
+            });
+        }
+
+        const r = Object.getOwnPropertyNames(s.raids);
+        if (r.length > 0) {
+            addtext(`Obrigado a raid de: `)
+            r.forEach(userId => {
+                addtext(`${s.raids[userId].name} com ${s.raids[userId].count} viewers`);
+            });
+        }
+
+        const mmc = Object.getOwnPropertyNames(s.user_messages_count);
+        if (mmc.length > 0) {
+            const moreMessagesCount = mmc
+                .map(id => { return { id: id, count: s.user_messages_count[id] } })
+                .reduce((prev, current) => prev.count > current.count ? prev : current);
+            const userWithMoreMessages = s.users[moreMessagesCount.id];
+            if (userWithMoreMessages)
+                addtext(`O maior mensageiro sendo: `, `${userWithMoreMessages.name} com ${moreMessagesCount.count} Mensagens`);
+        }
+
+        const mlc = Object.getOwnPropertyNames(s.likes.users);
+        if (mlc.length > 0) {
+            const moreLikesCount = mlc
+                .map(id => { return { id: id, count: s.likes.users[id].count } })
+                .reduce((prev, current) => prev.count > current.count ? prev : current);
+            const userWithMoreLikes = s.users[moreLikesCount.id];
+            if (userWithMoreLikes)
+                addtext(`Obrigado a ${userWithMoreLikes.name}`, `pelos ${moreLikesCount.count} likes!`);
+        }
+        const mhc = Object.getOwnPropertyNames(s.hates.users);
+        if (mhc.length > 0) {
+            const moreHateCount = mhc
+                .map(id => { return { id: id, count: s.hates.users[id].count } })
+                .reduce((prev, current) => prev.count > current.count ? prev : current);
+            const userWithMoreHate = s.users[moreHateCount.id];
+            if (userWithMoreHate)
+                addtext(`E ban no ${userWithMoreHate.name}`, `pelos ${moreHateCount.count} hates!`);
+        }
+
+
+        const mwb = Object.getOwnPropertyNames(s.wanted_bans);
+        if (mwb.length > 0) {
+            const moreWantedBan = mwb
+                .map(id => { return { id: id, count: s.wanted_bans[id].count } })
+                .reduce((prev, current) => prev.count > current.count ? prev : current);
+            const userMoreHated = s.users[moreWantedBan.id];
+            if (userMoreHated)
+                addtext(`Com o mais odiado da live sendo ${userMoreHated.name}`, `sofrendo ${moreWantedBan.count} tentativas de ban!`);
+        }
+        const mb = Object.getOwnPropertyNames(s.bans);
+        if (mb.length > 0) {
+            const moreBanned = mb
+                .map(id => { return { id: id, count: s.bans[id].count, name: s.bans[id].name } })
+                .reduce((prev, current) => prev.count > current.count ? prev : current);
+            if (moreBanned)
+                addtext(`O mais sofrido da live sendo ${moreBanned.name}`, `sofrendo ${moreBanned.count} bans!`);
+        }
+
+        addtext(`Com a participação de: `)
+        Object.getOwnPropertyNames(s.users).forEach(userId => {
+            if (s.user_messages_count[userId]) {
+                addtext(`${s.users[userId].name} com ${s.user_messages_count[userId]} mensagens`);
+                return;
+            }
+            addtext(`${s.users[userId].name}`);
+        });
+
+        addtext(`E com mensagens especiais como:`);
+        s.special_messages.forEach(message => {
+            addtext(`${message}`);
+        });
+    }
+
+</script>
