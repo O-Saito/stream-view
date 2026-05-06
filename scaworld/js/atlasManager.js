@@ -80,7 +80,7 @@ export const dynamicPropDefinition = {
  */
 function fixOrigin(src) {
     if (typeof src == 'string') return `/scaworld/sprites${src}`;
-    return src.src.replace(`${location.origin}/scaworld/sprites`, '');
+    return src.src.replace(`${location.origin}/stream-view/scaworld/sprites`, '');
 }
 
 /**
