@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="~/scaworld/editor.css">
+    <link rel="stylesheet" href="./editor.css">
 </head>
 
 <body>
@@ -126,12 +126,12 @@
 
     <script type="module">
         //@ts-check
-        import engine from '/scaworld/js/engine.js';
-        import world from '/scaworld/js/world.js';
-        import { atlases, charDefinitions, propsDefinition } from '/scaworld/js/atlasManager.js';
-        import charAnimatior from '/scaworld/js/systems/characterAnimator.js';
-        import character from '/scaworld/js/elements/character.js';
-        import editor from '/scaworld/js/editor.js';
+        import engine from './js/engine.js';
+        import world from './js/world.js';
+        import { atlases, charDefinitions, propsDefinition } from './js/atlasManager.js';
+        import charAnimatior from './js/systems/characterAnimator.js';
+        import character from './js/elements/character.js';
+        import editor from './js/editor.js';
 
         const debug = /** @type {HTMLCanvasElement} */ (document.getElementById('debugAtlas'));
         const ctx = /** @type {CanvasRenderingContext2D} */ debug.getContext('2d');
