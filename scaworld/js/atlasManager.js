@@ -436,10 +436,10 @@ export const createBackgroundAtlas = async () => {
     };
 
     await Promise.all([
-        loadPropsImage('/scaworld/sprites/world/ceu/estrelas.png'),
-        loadPropsImage('/scaworld/sprites/world/ceu/dia.png'),
-        loadPropsImage('/scaworld/sprites/world/ceu/tarde.png'),
-        loadPropsImage('/scaworld/sprites/world/ceu/noite2.png'),
+        loadPropsImage('/stream-view/scaworld/sprites/world/ceu/estrelas.png'),
+        loadPropsImage('/stream-view/scaworld/sprites/world/ceu/dia.png'),
+        loadPropsImage('/stream-view/scaworld/sprites/world/ceu/tarde.png'),
+        loadPropsImage('/stream-view/scaworld/sprites/world/ceu/noite2.png'),
     ]);
 
     const numOfLayers = data.size;
